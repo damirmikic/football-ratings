@@ -1,6 +1,6 @@
-# UEFA League Rankings - Soccer Rating Client
+# Global Football League Rankings - Soccer Rating Client
 
-A modular web application for viewing UEFA league rankings and team ratings from soccer-rating.com.
+A modular web application for viewing global football league rankings and team ratings from soccer-rating.com. Covers UEFA, CONMEBOL, CONCACAF, AFC, CAF, and OFC confederations.
 
 ## Project Structure
 
@@ -71,6 +71,26 @@ football-ratings/
 - ✅ **Responsive Design**: Mobile-friendly layout
 - ✅ **Error Handling**: Comprehensive error management
 - ✅ **Live Data**: Real-time data from soccer-rating.com
+- ✅ **Global Coverage**: 90+ countries across all confederations
+
+## Global Coverage
+
+### UEFA (Europe) - 51 Countries
+England, Germany, Italy, Spain, France, Portugal, Netherlands, Belgium, Turkey, and 42 more...
+
+### CONMEBOL (South America) - 10 Countries
+Brazil, Argentina, Uruguay, Colombia, Chile, Ecuador, Paraguay, Peru, Venezuela, Bolivia
+
+### CONCACAF (North/Central America & Caribbean) - 6 Countries
+Mexico, USA, Costa Rica, Jamaica, Canada, Guatemala
+
+### AFC (Asia) - 19 Countries
+Japan, South Korea, Iran, Australia, Saudi Arabia, China, Qatar, UAE, Thailand, India, and 10 more...
+
+### CAF (Africa) - 4 Countries
+Egypt, Morocco, South Africa, Rwanda
+
+### Total: 90+ Countries, 200+ Leagues
 
 ## Usage
 
