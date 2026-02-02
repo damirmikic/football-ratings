@@ -1,4 +1,4 @@
-import { fetchTeamData, fetchOddsData, clearCache, testConnection } from './api.js';
+import { fetchTeamData, fetchOddsData, clearCache, testConnection } from './api-python.js';
 import {
     createCountriesList,
     showLoading,
