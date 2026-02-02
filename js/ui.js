@@ -395,6 +395,108 @@ export function showTeamsView(teamData) {
     `;
 }
 
+// Show about view
+export function showAboutView() {
+    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById('aboutTab').classList.add('active');
+    document.getElementById('teamsContent').style.display = 'none';
+    document.getElementById('oddsDisplay').style.display = 'none';
+    document.getElementById('aboutDisplay').style.display = 'block';
+
+    const aboutDisplay = document.getElementById('aboutDisplay');
+
+    aboutDisplay.innerHTML = `
+        <div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #006600; margin-bottom: 20px; text-align: center;">About Global Football League Rankings</h2>
+
+            <div style="background-color: #f0f8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #006600;">
+                <h3 style="color: #006600; margin-bottom: 10px;">What is this application?</h3>
+                <p style="line-height: 1.6; color: #333;">
+                    This is a comprehensive football (soccer) analytics platform that provides team ratings, league rankings,
+                    and betting odds analysis for over 90 countries and 200+ leagues worldwide. The application calculates
+                    fair betting odds from team ratings and identifies value betting opportunities using advanced statistical models.
+                </p>
+            </div>
+
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+                <h3 style="color: #006600; margin-bottom: 15px;">Key Features</h3>
+                <ul style="line-height: 2; color: #333;">
+                    <li><strong>Global Coverage:</strong> UEFA, CONMEBOL, CONCACAF, AFC, CAF, OFC confederations</li>
+                    <li><strong>Team Ratings:</strong> Home and away performance ratings for all teams</li>
+                    <li><strong>Odds Calculator:</strong> Elo-based probability calculations with draw modeling</li>
+                    <li><strong>Value Betting:</strong> Expected Value (EV) analysis and value bet detection</li>
+                    <li><strong>Margin Analysis:</strong> Bookmaker margin calculation and adjustment options</li>
+                    <li><strong>Smart Caching:</strong> 1-hour cache duration for optimal performance</li>
+                    <li><strong>CORS Handling:</strong> Multiple proxy fallback options for data fetching</li>
+                </ul>
+            </div>
+
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+                <h3 style="color: #006600; margin-bottom: 15px;">How Odds Calculation Works</h3>
+                <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
+                    The application uses an Elo-based formula to calculate win probabilities from team ratings:
+                </p>
+                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; font-family: monospace; margin-bottom: 10px;">
+                    P(win) = 1 / (1 + 10^(-(ratingDiff)/400))
+                </div>
+                <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
+                    Additional factors considered:
+                </p>
+                <ul style="line-height: 1.8; color: #333;">
+                    <li><strong>Home Advantage:</strong> ~4% probability boost for home teams</li>
+                    <li><strong>Draw Probability:</strong> Modeled based on team strength difference (28% base, decreases with larger gaps)</li>
+                    <li><strong>Expected Value:</strong> Calculated as (Market Odds / Fair Odds - 1) × 100%</li>
+                </ul>
+            </div>
+
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+                <h3 style="color: #006600; margin-bottom: 15px;">Technology Stack</h3>
+                <ul style="line-height: 1.8; color: #333;">
+                    <li><strong>Frontend:</strong> Vanilla JavaScript (ES6 Modules)</li>
+                    <li><strong>Architecture:</strong> Modular design with separation of concerns</li>
+                    <li><strong>Modules:</strong> config.js, parsers.js, api.js, odds-calculator.js, ui.js, main.js</li>
+                    <li><strong>Styling:</strong> Pure CSS with responsive design</li>
+                    <li><strong>Data Fetching:</strong> Fetch API with CORS proxy support</li>
+                </ul>
+            </div>
+
+            <div style="background-color: #fff9e6; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f0ad4e;">
+                <h3 style="color: #8a6d3b; margin-bottom: 10px;">Disclaimer</h3>
+                <p style="line-height: 1.6; color: #8a6d3b; font-size: 14px;">
+                    <strong>Educational and Portfolio Purpose:</strong> This application is designed as a technical demonstration
+                    and portfolio project. Data is aggregated from public sources for analysis and educational purposes only.
+                    This tool is not affiliated with any bookmakers or data providers. Calculated odds and value indicators
+                    are statistical models and should not be used as the sole basis for betting decisions.
+                    <strong>Gambling involves risk. Please bet responsibly.</strong>
+                </p>
+            </div>
+
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
+                <h3 style="color: #006600; margin-bottom: 15px;">Source Code & Development</h3>
+                <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
+                    This is an open-source project. The complete source code is available on GitHub:
+                </p>
+                <div style="text-align: center; margin: 15px 0;">
+                    <a href="https://github.com/damirmikic/football-ratings"
+                       target="_blank"
+                       style="display: inline-block; padding: 12px 24px; background-color: #006600; color: white;
+                              text-decoration: none; border-radius: 6px; font-weight: bold;">
+                        View on GitHub
+                    </a>
+                </div>
+                <p style="line-height: 1.6; color: #333; font-size: 14px;">
+                    Contributions, issues, and feature requests are welcome!
+                </p>
+            </div>
+
+            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; font-size: 12px; color: #666;">
+                <p>Built with JavaScript ES6 Modules • Responsive Design • Global Coverage</p>
+                <p style="margin-top: 5px;">Co-Authored-By: Claude Sonnet 4.5</p>
+            </div>
+        </div>
+    `;
+}
+
 // Show odds view
 export function showOddsView(oddsData) {
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));

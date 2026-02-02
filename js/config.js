@@ -321,7 +321,7 @@ export const CONFIG = {
     // Current proxy settings
     CORS_PROXY: 'https://corsproxy.io/?',
     USE_CORS_PROXY: true,
-    CACHE_DURATION: 300000, // 5 minutes
+    CACHE_DURATION: 3600000, // 1 hour (60 minutes)
     MAX_RETRIES: 3,
     RETRY_DELAY: 1000,
 

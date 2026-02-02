@@ -7,6 +7,7 @@ import {
     showInfo,
     showTeamsDisplay,
     showOddsView,
+    showAboutView,
     getSelectedLeagueUrl,
     updateMarginAdjustment
 } from './ui.js';
@@ -162,6 +163,7 @@ function init() {
     // Attach navigation tab handlers
     const ratingsTab = document.getElementById('ratingsTab');
     const oddsTab = document.getElementById('oddsTab');
+    const aboutTab = document.getElementById('aboutTab');
 
     if (ratingsTab) {
         ratingsTab.addEventListener('click', handleRatingsTabClick);
@@ -169,6 +171,10 @@ function init() {
 
     if (oddsTab) {
         oddsTab.addEventListener('click', handleOddsTabClick);
+    }
+
+    if (aboutTab) {
+        aboutTab.addEventListener('click', showAboutView);
     }
 
     // Auto-test connection on load
