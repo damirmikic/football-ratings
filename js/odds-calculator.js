@@ -60,12 +60,22 @@ function probabilityToOdds(probability) {
  */
 export function calculateOddsFromRatings(homeRating, awayRating) {
     const probabilities = calculateMatchProbabilities(homeRating, awayRating);
+    
+    // Calculate DNB probabilities (redistribute draw probability)
+    const dnbHomeProb = probabilities.home / (probabilities.home + probabilities.away);
+    const dnbAwayProb = probabilities.away / (probabilities.home + probabilities.away);
 
     return {
         home: probabilityToOdds(probabilities.home),
         draw: probabilityToOdds(probabilities.draw),
         away: probabilityToOdds(probabilities.away),
-        probabilities: probabilities
+        dnbHome: probabilityToOdds(dnbHomeProb),
+        dnbAway: probabilityToOdds(dnbAwayProb),
+        probabilities: probabilities,
+        dnbProbabilities: {
+            home: dnbHomeProb,
+            away: dnbAwayProb
+        }
     };
 }
 
@@ -83,7 +93,7 @@ export function calculateExpectedValue(marketOdds, fairOdds) {
 
 /**
  * Compare calculated odds with market odds
- * @param {Object} calculatedOdds - Our calculated odds {home, draw, away}
+ * @param {Object} calculatedOdds - Our calculated odds {home, draw, away, dnbHome, dnbAway}
  * @param {Object} marketOdds - Bookmaker odds {1, X, 2}
  * @returns {Object} - Comparison with value indicators
  */
@@ -91,6 +101,11 @@ export function compareOdds(calculatedOdds, marketOdds) {
     const homeEV = calculateExpectedValue(marketOdds['1'], calculatedOdds.home);
     const drawEV = calculateExpectedValue(marketOdds['X'], calculatedOdds.draw);
     const awayEV = calculateExpectedValue(marketOdds['2'], calculatedOdds.away);
+    
+    // Calculate DNB odds from market
+    const marketDNB = calculateDNBFromMarket(marketOdds);
+    const dnbHomeEV = calculateExpectedValue(marketDNB.home, calculatedOdds.dnbHome);
+    const dnbAwayEV = calculateExpectedValue(marketDNB.away, calculatedOdds.dnbAway);
 
     return {
         home: {
@@ -113,6 +128,22 @@ export function compareOdds(calculatedOdds, marketOdds) {
             ev: awayEV,
             hasValue: awayEV > 5,
             probability: calculatedOdds.probabilities.away
+        },
+        dnb: {
+            home: {
+                calculated: calculatedOdds.dnbHome,
+                market: marketDNB.home,
+                ev: dnbHomeEV,
+                hasValue: dnbHomeEV > 5,
+                probability: calculatedOdds.dnbProbabilities.home
+            },
+            away: {
+                calculated: calculatedOdds.dnbAway,
+                market: marketDNB.away,
+                ev: dnbAwayEV,
+                hasValue: dnbAwayEV > 5,
+                probability: calculatedOdds.dnbProbabilities.away
+            }
         }
     };
 }
@@ -126,7 +157,9 @@ export function findValueBets(comparison) {
     const bets = [
         { outcome: 'Home Win', ...comparison.home },
         { outcome: 'Draw', ...comparison.draw },
-        { outcome: 'Away Win', ...comparison.away }
+        { outcome: 'Away Win', ...comparison.away },
+        { outcome: 'Home DNB', ...comparison.dnb.home },
+        { outcome: 'Away DNB', ...comparison.dnb.away }
     ];
 
     // Sort by EV descending
@@ -230,4 +263,37 @@ export function removeMarginFromOdds(marketOdds) {
  */
 export function formatMargin(margin) {
     return (margin * 100).toFixed(2) + '%';
+}
+
+/**
+ * Calculate DNB (Draw No Bet) odds from 1X2 market odds
+ * DNB refunds the stake if the match is a draw
+ * @param {Object} marketOdds - Market odds {1, X, 2}
+ * @returns {Object} - DNB odds {home, away}
+ */
+export function calculateDNBFromMarket(marketOdds) {
+    // Convert odds to probabilities
+    const prob1 = 1 / marketOdds['1'];
+    const probX = 1 / marketOdds['X'];
+    const prob2 = 1 / marketOdds['2'];
+    
+    // Normalize probabilities (remove margin)
+    const totalProb = prob1 + probX + prob2;
+    const normProb1 = prob1 / totalProb;
+    const normProbX = probX / totalProb;
+    const normProb2 = prob2 / totalProb;
+    
+    // Calculate DNB probabilities (redistribute draw probability)
+    const dnbProb1 = normProb1 / (normProb1 + normProb2);
+    const dnbProb2 = normProb2 / (normProb1 + normProb2);
+    
+    // Re-apply margin proportionally
+    const margin = totalProb - 1;
+    const dnbProb1WithMargin = dnbProb1 * (1 + margin);
+    const dnbProb2WithMargin = dnbProb2 * (1 + margin);
+    
+    return {
+        home: 1 / dnbProb1WithMargin,
+        away: 1 / dnbProb2WithMargin
+    };
 }

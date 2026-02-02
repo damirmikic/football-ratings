@@ -9,7 +9,8 @@ import {
     calculateBookmakerMargin,
     applyMarginToOdds,
     removeMarginFromOdds,
-    formatMargin
+    formatMargin,
+    calculateDNBFromMarket
 } from './odds-calculator.js';
 
 // UI state management
@@ -310,6 +311,62 @@ export function createOddsComparisonTable(odds, teamsData) {
                         </div>
                     </div>
                 </div>
+                
+                <!-- DNB (Draw No Bet) Section -->
+                <div style="margin-top: 10px; padding: 15px; background-color: #f9f9f9; border-top: 2px solid #ddd;">
+                    <div style="text-align: center; font-weight: bold; font-size: 13px; color: #333; margin-bottom: 12px;">
+                        DNB (Draw No Bet)
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                        <!-- DNB Home -->
+                        <div style="padding: 12px; background-color: white; border-radius: 6px; border: 1px solid ${comparison.dnb.home.hasValue ? '#006600' : '#ddd'}; ${comparison.dnb.home.hasValue ? 'background-color: #f0f8f0;' : ''}">
+                            <div style="text-align: center; font-weight: bold; font-size: 12px; color: #333; margin-bottom: 8px;">
+                                HOME DNB
+                            </div>
+                            <div style="text-align: center; margin-bottom: 6px;">
+                                <div style="font-size: 10px; color: #666;">Market</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #006600;">${formatOdds(comparison.dnb.home.market)}</div>
+                            </div>
+                            <div style="text-align: center; margin-bottom: 6px;">
+                                <div style="font-size: 10px; color: #666;">Fair</div>
+                                <div style="font-size: 16px; color: #999;">${formatOdds(comparison.dnb.home.calculated)}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 10px; color: #666;">EV</div>
+                                <div style="font-size: 14px; font-weight: bold; color: ${comparison.dnb.home.ev > 0 ? '#006600' : '#cc0000'};">
+                                    ${formatEV(comparison.dnb.home.ev)}
+                                </div>
+                            </div>
+                            <div style="text-align: center; margin-top: 6px; font-size: 10px; color: #666;">
+                                ${formatProbability(comparison.dnb.home.probability)}
+                            </div>
+                        </div>
+                        
+                        <!-- DNB Away -->
+                        <div style="padding: 12px; background-color: white; border-radius: 6px; border: 1px solid ${comparison.dnb.away.hasValue ? '#006600' : '#ddd'}; ${comparison.dnb.away.hasValue ? 'background-color: #f0f8f0;' : ''}">
+                            <div style="text-align: center; font-weight: bold; font-size: 12px; color: #333; margin-bottom: 8px;">
+                                AWAY DNB
+                            </div>
+                            <div style="text-align: center; margin-bottom: 6px;">
+                                <div style="font-size: 10px; color: #666;">Market</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #006600;">${formatOdds(comparison.dnb.away.market)}</div>
+                            </div>
+                            <div style="text-align: center; margin-bottom: 6px;">
+                                <div style="font-size: 10px; color: #666;">Fair</div>
+                                <div style="font-size: 16px; color: #999;">${formatOdds(comparison.dnb.away.calculated)}</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 10px; color: #666;">EV</div>
+                                <div style="font-size: 14px; font-weight: bold; color: ${comparison.dnb.away.ev > 0 ? '#006600' : '#cc0000'};">
+                                    ${formatEV(comparison.dnb.away.ev)}
+                                </div>
+                            </div>
+                            <div style="text-align: center; margin-top: 6px; font-size: 10px; color: #666;">
+                                ${formatProbability(comparison.dnb.away.probability)}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     });
@@ -352,7 +409,8 @@ export function createOddsComparisonTable(odds, teamsData) {
                 <strong>Fair:</strong> Calculated odds from team ratings<br>
                 <strong>EV (Expected Value):</strong> Percentage difference - positive EV suggests potential value<br>
                 <strong>Green background:</strong> Indicates value bet (EV > 5%)<br>
-                <strong>Probability:</strong> Win probability based on ratings
+                <strong>Probability:</strong> Win probability based on ratings<br>
+                <strong>DNB (Draw No Bet):</strong> Bet refunded if match is a draw - calculated by redistributing draw probability between home/away
             </div>
         </div>
     `;
