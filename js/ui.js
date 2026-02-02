@@ -434,17 +434,19 @@ export function showAboutView() {
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
                 <h3 style="color: #006600; margin-bottom: 15px;">How Odds Calculation Works</h3>
                 <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
-                    The application uses an Elo-based formula to calculate win probabilities from team ratings:
+                    The application uses a 3-way Elo-based formula to calculate match probabilities from team ratings:
                 </p>
-                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; font-family: monospace; margin-bottom: 10px;">
-                    P(win) = 1 / (1 + 10^(-(ratingDiff)/400))
+                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; font-family: monospace; margin-bottom: 10px; font-size: 13px;">
+                    P(Home) = F(diff - drawWidth)<br>
+                    P(Draw) = F(diff + drawWidth) - F(diff - drawWidth)<br>
+                    P(Away) = 1 - F(diff + drawWidth)<br>
+                    <span style="color: #666; font-size: 11px;">*where F(x) = 1 / (1 + 10^(-x/400)) and diff = HomeRating - AwayRating</span>
                 </div>
                 <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
-                    Additional factors considered:
+                    Model Parameters:
                 </p>
                 <ul style="line-height: 1.8; color: #333;">
-                    <li><strong>Home Advantage:</strong> ~4% probability boost for home teams</li>
-                    <li><strong>Draw Probability:</strong> Modeled based on team strength difference (28% base, decreases with larger gaps)</li>
+                    <li><strong>Draw Width:</strong> 90 points (calibrated for ~25% base draw rate)</li>
                     <li><strong>Expected Value:</strong> Calculated as (Market Odds / Fair Odds - 1) × 100%</li>
                 </ul>
             </div>
