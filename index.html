@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UEFA League Rankings - Soccer Rating Client</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                UEFA Countries & Leagues
+            </div>
+            <div class="config-panel">
+                <div class="status">✅ Connected to soccer-rating.com</div>
+                <div class="info">CORS proxy enabled for cross-origin requests</div>
+                <button onclick="fetcher.clearCache()">Clear Cache</button>
+                <button onclick="fetcher.testConnection()">Test Connection</button>
+                <label><input type="checkbox" id="corsProxyCheckbox" checked> Use CORS Proxy</label>
+            </div>
+            <div id="countriesList"></div>
+        </div>
+
+        <div class="main-content">
+            <div class="content-header">
+                <div class="content-title">UEFA League Rankings</div>
+                <div class="content-subtitle">Live data from soccer-rating.com</div>
+            </div>
+
+            <div id="welcomeMessage" class="welcome-message">
+                🏆 Welcome to the UEFA League Rankings Explorer!
+                <br><br>
+                <strong>How to use:</strong><br>
+                1. Click any country below to load its leagues<br>
+                2. Click any league to view team ratings<br>
+                3. Switch between Home/Away/Both views<br><br>
+                <strong>Features:</strong><br>
+                ✅ Live data from soccer-rating.com<br>
+                ✅ Automatic CORS proxy handling<br>
+                ✅ Smart caching (5-min duration)<br>
+                ✅ Multiple URL pattern fallbacks<br><br>
+                <em>Start by expanding any country to see their leagues!</em>
+            </div>
+
+            <div id="teamsDisplay" class="teams-display">
+                <div id="teamsHeader" class="teams-header"></div>
+                <div class="teams-navigation">
+                    <div class="nav-tab active" id="ratingsTab">Home/Away Ratings</div>
+                    <div class="nav-tab" id="oddsTab">Odds</div>
+                </div>
+                <div id="teamsContent" class="teams-content"></div>
+                <div id="oddsDisplay" class="teams-content" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay">Loading...</div>
+    <div id="errorMessage" class="error-message"></div>
+    <div id="infoMessage" class="info-message"></div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
