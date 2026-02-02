@@ -50,7 +50,7 @@ export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
             });
 
             if (response.ok) {
-                console.log('✅ Direct request successful');
+                console.log(' Direct request successful');
                 return response;
             }
         } catch (error) {
@@ -116,7 +116,7 @@ export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
                         responseData = response;
                     }
 
-                    console.log(`✅ Proxy ${proxyIndex + 1} successful:`, proxyBase);
+                    console.log(` Proxy ${proxyIndex + 1} successful:`, proxyBase);
 
                     // Update CONFIG to use successful proxy for future requests
                     CONFIG.CORS_PROXY = proxyBase;
@@ -178,7 +178,7 @@ export async function fetchTeamData(countryName, leagueName, leagueCode = null) 
                         awayTeams = parseTeamDataFromHTML(awayHTML, 'away');
 
                         if (homeTeams.length > 0 || awayTeams.length > 0) {
-                            console.log('✅ Successfully fetched team data:', { home: homeTeams.length, away: awayTeams.length });
+                            console.log(' Successfully fetched team data:', { home: homeTeams.length, away: awayTeams.length });
                             break;
                         }
                     }
@@ -195,14 +195,14 @@ export async function fetchTeamData(countryName, leagueName, leagueCode = null) 
                         if (teams.length > 0) {
                             homeTeams = teams;
                             awayTeams = teams;
-                            console.log('✅ Successfully fetched general team data:', teams.length);
+                            console.log(' Successfully fetched general team data:', teams.length);
                             break;
                         }
                     }
                 }
             } catch (error) {
                 lastError = error;
-                console.warn('❌ Pattern failed:', error.message);
+                console.warn(' Pattern failed:', error.message);
             }
         }
 
@@ -281,13 +281,13 @@ export async function fetchLeagueData(countryName) {
                     leagues = parseLeagueDataFromHTML(html);
 
                     if (leagues.length > 0) {
-                        console.log(`✅ Successfully fetched ${leagues.length} leagues from:`, endpoint);
+                        console.log(` Successfully fetched ${leagues.length} leagues from:`, endpoint);
                         break;
                     }
                 }
             } catch (error) {
                 lastError = error;
-                console.warn('❌ Endpoint failed:', endpoint, error.message);
+                console.warn(' Endpoint failed:', endpoint, error.message);
             }
         }
 
@@ -347,7 +347,7 @@ export function clearCache() {
     return true;
 }
 
-// Test connection to soccer-rating.com
+// Test connection to data source
 export async function testConnection() {
     try {
         const testUrl = buildURL('/England/');
@@ -358,7 +358,7 @@ export async function testConnection() {
         if (response.ok) {
             const html = await response.text();
             if (html.length > 100) {
-                return { success: true, message: '✅ Connection successful! Ready to fetch data.' };
+                return { success: true, message: ' Connection successful! Ready to fetch data.' };
             } else {
                 throw new Error('Empty or invalid response');
             }
@@ -366,6 +366,6 @@ export async function testConnection() {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
-        return { success: false, message: `❌ Connection failed: ${error.message}` };
+        return { success: false, message: ` Connection failed: ${error.message}` };
     }
 }

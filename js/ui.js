@@ -1,9 +1,22 @@
 import { CONFIG, countries } from './config.js';
+import {
+    calculateOddsFromRatings,
+    compareOdds,
+    formatOdds,
+    formatProbability,
+    formatEV,
+    findValueBets,
+    calculateBookmakerMargin,
+    applyMarginToOdds,
+    removeMarginFromOdds,
+    formatMargin
+} from './odds-calculator.js';
 
 // UI state management
 let selectedCountryForTeams = null;
 let selectedLeagueForTeams = null;
 let selectedLeagueUrl = null;
+let selectedTeamsData = null;
 
 // Loading overlay
 export function showLoading(message) {
@@ -63,7 +76,7 @@ export function createCountriesList() {
         countryCard.innerHTML = `
         <div class="country-header">
             <div class="country-name">
-                🏆 ${countryName}
+                ${countryName}
                 <span class="country-rating">${rating}</span>
             </div>
         </div>
@@ -104,7 +117,7 @@ export function createTeamsTable(teams) {
                         <td style="text-align: center; font-weight: bold; color: #666;">${team.rank}</td>
                         <td style="color: #006600; font-weight: bold;">${team.name}</td>
                         <td style="text-align: center; color: #666;">${team.league || '-'}</td>
-                        <td style="text-align: center;">🏴</td>
+                        <td style="text-align: center;">-</td>
                         <td style="text-align: right; font-weight: bold; color: #333;">${team.rating}</td>
                     </tr>
                 `).join('')}
@@ -145,6 +158,206 @@ export function createOddsTable(odds) {
     `;
 }
 
+// Store margin adjustment preference
+let marginAdjustment = 'none'; // Options: 'none', 'applyToCalculated', 'removeFromMarket'
+
+// Create enhanced odds comparison display with calculated odds and value indicators
+export function createOddsComparisonTable(odds, teamsData) {
+    if (!odds || odds.length === 0) {
+        return '<div style="padding: 20px; text-align: center; color: #666;">No odds data available</div>';
+    }
+
+    if (!teamsData || !teamsData.home || !teamsData.away) {
+        return '<div style="padding: 20px; text-align: center; color: #666;">Team ratings not available for odds calculation</div>';
+    }
+
+    // Create lookup maps for team ratings
+    const homeRatings = {};
+    const awayRatings = {};
+
+    teamsData.home.forEach(team => {
+        homeRatings[team.name] = parseFloat(team.rating);
+    });
+
+    teamsData.away.forEach(team => {
+        awayRatings[team.name] = parseFloat(team.rating);
+    });
+
+    let matchCards = '';
+    let valueBetsCount = 0;
+
+    odds.forEach(match => {
+        const homeRating = homeRatings[match.homeTeam];
+        const awayRating = awayRatings[match.awayTeam];
+
+        if (!homeRating || !awayRating) {
+            matchCards += `
+                <div style="padding: 15px; margin-bottom: 15px; background-color: #f9f9f9; border-radius: 6px; text-align: center; color: #999;">
+                    <em>Ratings not available for ${match.homeTeam} vs ${match.awayTeam}</em>
+                </div>
+            `;
+            return;
+        }
+
+        // Calculate odds from ratings
+        let calculatedOdds = calculateOddsFromRatings(homeRating, awayRating);
+
+        // Calculate bookmaker margin
+        const bookmakerMargin = calculateBookmakerMargin(match.odds);
+
+        // Adjust odds based on margin setting
+        let displayCalculatedOdds = calculatedOdds;
+        let displayMarketOdds = match.odds;
+
+        if (marginAdjustment === 'applyToCalculated') {
+            displayCalculatedOdds = applyMarginToOdds(calculatedOdds, bookmakerMargin);
+        } else if (marginAdjustment === 'removeFromMarket') {
+            displayMarketOdds = removeMarginFromOdds(match.odds);
+        }
+
+        // Compare odds (use original for EV calculation)
+        const comparison = compareOdds(calculatedOdds, match.odds);
+
+        // Find value bets
+        const valueBets = findValueBets(comparison);
+        const hasValue = valueBets.length > 0;
+        if (hasValue) valueBetsCount++;
+
+        matchCards += `
+            <div style="margin-bottom: 20px; border: 2px solid ${hasValue ? '#006600' : '#ddd'}; border-radius: 8px; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <!-- Match Header -->
+                <div style="padding: 15px; background-color: ${hasValue ? '#e8f5e8' : '#f5f5f5'}; border-bottom: 2px solid ${hasValue ? '#006600' : '#ddd'}; border-radius: 6px 6px 0 0;">
+                    <div style="font-size: 16px; font-weight: bold; color: #006600; text-align: center;">
+                        ${match.homeTeam} vs ${match.awayTeam}
+                    </div>
+                    <div style="font-size: 11px; color: #666; text-align: center; margin-top: 5px;">
+                        Bookmaker Margin: ${formatMargin(bookmakerMargin)} | Ratings: ${homeRating.toFixed(1)} vs ${awayRating.toFixed(1)}
+                        ${hasValue ? ' | <strong style="color: #006600;">VALUE OPPORTUNITY</strong>' : ''}
+                    </div>
+                </div>
+
+                <!-- Odds Grid -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;">
+                    <!-- Home Win -->
+                    <div style="padding: 15px; border-right: 1px solid #ddd; ${comparison.home.hasValue ? 'background-color: #f0f8f0;' : ''}">
+                        <div style="text-align: center; font-weight: bold; font-size: 14px; color: #333; margin-bottom: 10px;">
+                            HOME WIN
+                        </div>
+                        <div style="text-align: center; margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #666;">Market</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #006600;">${formatOdds(displayMarketOdds['1'])}</div>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #666;">Fair</div>
+                            <div style="font-size: 18px; color: #999;">${formatOdds(displayCalculatedOdds.home)}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 11px; color: #666;">EV</div>
+                            <div style="font-size: 16px; font-weight: bold; color: ${comparison.home.ev > 0 ? '#006600' : '#cc0000'};">
+                                ${formatEV(comparison.home.ev)}
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
+                            ${formatProbability(comparison.home.probability)}
+                        </div>
+                    </div>
+
+                    <!-- Draw -->
+                    <div style="padding: 15px; border-right: 1px solid #ddd; ${comparison.draw.hasValue ? 'background-color: #f0f8f0;' : ''}">
+                        <div style="text-align: center; font-weight: bold; font-size: 14px; color: #333; margin-bottom: 10px;">
+                            DRAW
+                        </div>
+                        <div style="text-align: center; margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #666;">Market</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #006600;">${formatOdds(displayMarketOdds['X'])}</div>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #666;">Fair</div>
+                            <div style="font-size: 18px; color: #999;">${formatOdds(displayCalculatedOdds.draw)}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 11px; color: #666;">EV</div>
+                            <div style="font-size: 16px; font-weight: bold; color: ${comparison.draw.ev > 0 ? '#006600' : '#cc0000'};">
+                                ${formatEV(comparison.draw.ev)}
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
+                            ${formatProbability(comparison.draw.probability)}
+                        </div>
+                    </div>
+
+                    <!-- Away Win -->
+                    <div style="padding: 15px; ${comparison.away.hasValue ? 'background-color: #f0f8f0;' : ''}">
+                        <div style="text-align: center; font-weight: bold; font-size: 14px; color: #333; margin-bottom: 10px;">
+                            AWAY WIN
+                        </div>
+                        <div style="text-align: center; margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #666;">Market</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #006600;">${formatOdds(displayMarketOdds['2'])}</div>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 8px;">
+                            <div style="font-size: 11px; color: #666;">Fair</div>
+                            <div style="font-size: 18px; color: #999;">${formatOdds(displayCalculatedOdds.away)}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 11px; color: #666;">EV</div>
+                            <div style="font-size: 16px; font-weight: bold; color: ${comparison.away.ev > 0 ? '#006600' : '#cc0000'};">
+                                ${formatEV(comparison.away.ev)}
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
+                            ${formatProbability(comparison.away.probability)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    return `
+        <!-- Controls Panel -->
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #f0f8f0; border-radius: 6px; border: 1px solid #006600;">
+            <div style="margin-bottom: 10px;">
+                <strong>Value Bets Found: ${valueBetsCount}</strong>
+                <span style="margin-left: 15px; font-size: 12px; color: #666;">(Matches with green border and background have value opportunities)</span>
+            </div>
+            <div style="font-size: 13px; font-weight: bold; margin-bottom: 8px;">Margin Adjustment:</div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <label style="cursor: pointer; padding: 8px 12px; background-color: ${marginAdjustment === 'none' ? '#006600' : 'white'}; color: ${marginAdjustment === 'none' ? 'white' : '#333'}; border: 1px solid #006600; border-radius: 4px;">
+                    <input type="radio" name="marginAdjustment" value="none" ${marginAdjustment === 'none' ? 'checked' : ''} onchange="window.updateMarginAdjustment('none')" style="margin-right: 5px;">
+                    No Adjustment
+                </label>
+                <label style="cursor: pointer; padding: 8px 12px; background-color: ${marginAdjustment === 'applyToCalculated' ? '#006600' : 'white'}; color: ${marginAdjustment === 'applyToCalculated' ? 'white' : '#333'}; border: 1px solid #006600; border-radius: 4px;">
+                    <input type="radio" name="marginAdjustment" value="applyToCalculated" ${marginAdjustment === 'applyToCalculated' ? 'checked' : ''} onchange="window.updateMarginAdjustment('applyToCalculated')" style="margin-right: 5px;">
+                    Apply Market Margin to Fair Odds
+                </label>
+                <label style="cursor: pointer; padding: 8px 12px; background-color: ${marginAdjustment === 'removeFromMarket' ? '#006600' : 'white'}; color: ${marginAdjustment === 'removeFromMarket' ? 'white' : '#333'}; border: 1px solid #006600; border-radius: 4px;">
+                    <input type="radio" name="marginAdjustment" value="removeFromMarket" ${marginAdjustment === 'removeFromMarket' ? 'checked' : ''} onchange="window.updateMarginAdjustment('removeFromMarket')" style="margin-right: 5px;">
+                    Remove Margin from Market Odds
+                </label>
+            </div>
+            <div style="font-size: 11px; color: #666; margin-top: 8px;">
+                Adjust odds to compare like-for-like: either add bookmaker margin to fair odds, or remove it from market odds.
+            </div>
+        </div>
+
+        <!-- Match Cards -->
+        ${matchCards}
+
+        <!-- Legend -->
+        <div style="margin-top: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 6px; border: 1px solid #ddd;">
+            <div style="font-weight: bold; margin-bottom: 10px;">How to Read:</div>
+            <div style="font-size: 12px; line-height: 1.6;">
+                <strong>Market:</strong> Bookmaker odds (includes margin)<br>
+                <strong>Fair:</strong> Calculated odds from team ratings<br>
+                <strong>EV (Expected Value):</strong> Percentage difference - positive EV suggests potential value<br>
+                <strong>Green background:</strong> Indicates value bet (EV > 5%)<br>
+                <strong>Probability:</strong> Win probability based on ratings
+            </div>
+        </div>
+    `;
+}
+
 // Show teams display panel
 export function showTeamsDisplay(countryName, leagueName, leagueCode, teamData) {
     const teamsHeader = document.getElementById('teamsHeader');
@@ -153,6 +366,7 @@ export function showTeamsDisplay(countryName, leagueName, leagueCode, teamData) 
     selectedCountryForTeams = countryName;
     selectedLeagueForTeams = leagueName;
     selectedLeagueUrl = teamData.leagueUrl;
+    selectedTeamsData = teamData; // Store for odds calculation
 
     document.getElementById('welcomeMessage').style.display = 'none';
     document.getElementById('teamsDisplay').classList.add('show');
@@ -171,11 +385,11 @@ export function showTeamsView(teamData) {
 
     teamsContent.innerHTML = `
         <div class="teams-table-container">
-            <div class="table-title">🏠 Home Ratings (${teamData.home.length} teams)</div>
+            <div class="table-title">Home Ratings (${teamData.home.length} teams)</div>
             ${createTeamsTable(teamData.home)}
         </div>
         <div class="teams-table-container">
-            <div class="table-title">✈️ Away Ratings (${teamData.away.length} teams)</div>
+            <div class="table-title">Away Ratings (${teamData.away.length} teams)</div>
             ${createTeamsTable(teamData.away)}
         </div>
     `;
@@ -195,7 +409,11 @@ export function showOddsView(oddsData) {
         return;
     }
 
-    if (oddsData) {
+    if (oddsData && selectedTeamsData) {
+        // Use enhanced comparison table with value indicators
+        oddsDisplay.innerHTML = createOddsComparisonTable(oddsData, selectedTeamsData);
+    } else if (oddsData) {
+        // Fallback to simple table if teams data not available
         oddsDisplay.innerHTML = createOddsTable(oddsData);
     } else {
         oddsDisplay.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No odds data available for this league.</div>';
@@ -213,4 +431,16 @@ export function getSelectedCountry() {
 
 export function getSelectedLeague() {
     return selectedLeagueForTeams;
+}
+
+export function getSelectedTeamsData() {
+    return selectedTeamsData;
+}
+
+// Update margin adjustment setting and refresh odds display
+export function updateMarginAdjustment(newValue) {
+    marginAdjustment = newValue;
+    // Trigger odds view refresh by dispatching a custom event
+    const event = new CustomEvent('marginAdjustmentChanged');
+    document.dispatchEvent(event);
 }

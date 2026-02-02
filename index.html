@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UEFA League Rankings - Soccer Rating Client</title>
+    <title>Global Football League Rankings</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
         <div class="sidebar">
             <div class="sidebar-header">
-                UEFA Countries & Leagues
+                Global Countries & Leagues
             </div>
             <div class="config-panel">
-                <div class="status">✅ Connected to soccer-rating.com</div>
+                <div class="status">Connected to data source</div>
                 <div class="info">CORS proxy enabled for cross-origin requests</div>
                 <button onclick="fetcher.clearCache()">Clear Cache</button>
                 <button onclick="fetcher.testConnection()">Test Connection</button>
@@ -24,23 +24,24 @@
 
         <div class="main-content">
             <div class="content-header">
-                <div class="content-title">UEFA League Rankings</div>
-                <div class="content-subtitle">Live data from soccer-rating.com</div>
+                <div class="content-title">Global Football League Rankings</div>
+                <div class="content-subtitle">Live team ratings and league data</div>
             </div>
 
             <div id="welcomeMessage" class="welcome-message">
-                🏆 Welcome to the UEFA League Rankings Explorer!
+                Welcome to Global Football League Rankings
                 <br><br>
                 <strong>How to use:</strong><br>
-                1. Click any country below to load its leagues<br>
+                1. Click any country to load its leagues<br>
                 2. Click any league to view team ratings<br>
-                3. Switch between Home/Away/Both views<br><br>
+                3. Switch between Home/Away ratings and Odds views<br><br>
                 <strong>Features:</strong><br>
-                ✅ Live data from soccer-rating.com<br>
-                ✅ Automatic CORS proxy handling<br>
-                ✅ Smart caching (5-min duration)<br>
-                ✅ Multiple URL pattern fallbacks<br><br>
-                <em>Start by expanding any country to see their leagues!</em>
+                - Live team rating data<br>
+                - Automatic CORS proxy handling<br>
+                - Smart caching (5-min duration)<br>
+                - Multiple URL pattern fallbacks<br>
+                - Coverage of 90+ countries worldwide<br><br>
+                <em>Start by selecting any country to see their leagues!</em>
             </div>
 
             <div id="teamsDisplay" class="teams-display">

@@ -1,6 +1,6 @@
 # Global Football League Rankings - Soccer Rating Client
 
-A modular web application for viewing global football league rankings and team ratings from soccer-rating.com. Covers UEFA, CONMEBOL, CONCACAF, AFC, CAF, and OFC confederations.
+A modular web application for viewing global football league rankings and team ratings. Covers UEFA, CONMEBOL, CONCACAF, AFC, CAF, and OFC confederations.
 
 ## Project Structure
 
@@ -13,6 +13,7 @@ football-ratings/
 │   ├── config.js          # Configuration and constants
 │   ├── parsers.js         # HTML parsing functions
 │   ├── api.js             # Data fetching and CORS handling
+│   ├── odds-calculator.js # Odds calculation and value analysis
 │   ├── ui.js              # UI rendering functions
 │   └── main.js            # Application initialization and event handlers
 └── README.md              # This file
@@ -41,7 +42,21 @@ football-ratings/
   - `fetchOddsData()` - Fetch betting odds
   - `fetchWithRetry()` - Enhanced fetch with CORS proxy fallback
   - `clearCache()` - Clear all cached data
-  - `testConnection()` - Test connection to soccer-rating.com
+  - `testConnection()` - Test connection to data source
+
+### odds-calculator.js
+- **Purpose**: Calculate fair odds from team ratings and identify value bets
+- **Exports**:
+  - `calculateOddsFromRatings()` - Convert team ratings to betting odds
+  - `compareOdds()` - Compare calculated odds with market odds
+  - `calculateExpectedValue()` - Calculate EV percentage
+  - `findValueBets()` - Identify bets with positive expected value
+  - `formatOdds()` / `formatProbability()` / `formatEV()` - Display formatters
+- **Algorithm**: Elo-based probability calculation with draw modeling
+- **Features**:
+  - Accounts for home advantage
+  - Models draw probability based on team strength difference
+  - Identifies value bets (EV > 5%)
 
 ### ui.js
 - **Purpose**: UI rendering and display management
@@ -64,14 +79,16 @@ football-ratings/
 
 ## Features
 
-- ✅ **Modular Architecture**: Clean separation of concerns
-- ✅ **ES6 Modules**: Modern JavaScript module system
-- ✅ **CORS Handling**: Multiple proxy fallback options
-- ✅ **Smart Caching**: 5-minute cache duration for API calls
-- ✅ **Responsive Design**: Mobile-friendly layout
-- ✅ **Error Handling**: Comprehensive error management
-- ✅ **Live Data**: Real-time data from soccer-rating.com
-- ✅ **Global Coverage**: 90+ countries across all confederations
+- **Modular Architecture**: Clean separation of concerns
+- **ES6 Modules**: Modern JavaScript module system
+- **CORS Handling**: Multiple proxy fallback options
+- **Smart Caching**: 5-minute cache duration for API calls
+- **Responsive Design**: Mobile-friendly layout
+- **Error Handling**: Comprehensive error management
+- **Live Data**: Real-time data updates
+- **Global Coverage**: 90+ countries across all confederations
+- **Odds Calculation**: Calculate fair odds from team ratings
+- **Value Bet Detection**: Identify betting opportunities with positive expected value
 
 ## Global Coverage
 
@@ -91,6 +108,56 @@ Japan, South Korea, Iran, Australia, Saudi Arabia, China, Qatar, UAE, Thailand, 
 Egypt, Morocco, South Africa, Rwanda
 
 ### Total: 90+ Countries, 200+ Leagues
+
+## Odds Calculation & Value Betting
+
+The application includes advanced odds calculation that converts team ratings into fair betting odds and identifies value opportunities.
+
+### How It Works
+
+**1. Probability Calculation**
+- Uses Elo-based formula to calculate win probabilities from rating differences
+- Accounts for home advantage (approximately 4%)
+- Models draw probability based on team strength difference
+- More evenly matched teams have higher draw probability
+
+**2. Fair Odds Generation**
+- Converts probabilities to decimal odds format
+- Formula: Odds = 1 / Probability
+- Produces "fair" odds without bookmaker margin
+
+**3. Value Detection**
+- Compares calculated fair odds with market odds
+- Calculates Expected Value (EV): (Market Odds / Fair Odds - 1) × 100%
+- Highlights bets with EV > 5% as potential value
+- Green background indicates value opportunities
+
+### Interpretation
+
+**Market Odds vs Fair Odds:**
+- Market > Fair: Potential value bet (positive EV)
+- Market < Fair: Bookmaker favoring this outcome (negative EV)
+- Market ≈ Fair: Efficiently priced market
+
+**Expected Value (EV):**
+- Positive EV: Bookmaker odds suggest value
+- +10% EV: Market odds are 10% higher than fair odds
+- Negative EV: Odds below fair value
+
+**Example:**
+```
+Fair Odds: 2.50 (40% probability)
+Market Odds: 3.00
+EV = (3.00 / 2.50 - 1) × 100% = +20%
+```
+This suggests a 20% value opportunity.
+
+### Usage Tips
+
+- Value bets don't guarantee wins, but offer positive long-term expectation
+- Higher EV indicates stronger perceived value
+- Consider multiple factors beyond ratings
+- Use as one tool among many for analysis
 
 ## Usage
 
@@ -120,10 +187,10 @@ Egypt, Morocco, South Africa, Rwanda
 
 ## Browser Compatibility
 
-- Chrome/Edge: ✅ Full support
-- Firefox: ✅ Full support
-- Safari: ✅ Full support
-- IE11: ❌ Not supported (requires ES6 modules)
+- Chrome/Edge: Full support
+- Firefox: Full support
+- Safari: Full support
+- IE11: Not supported (requires ES6 modules)
 
 ## Configuration
 
@@ -156,7 +223,7 @@ Edit `js/config.js` to modify:
 
 ## API Reference
 
-### soccer-rating.com Endpoints
+### Data Source Endpoints
 
 - **Country Page**: `/{country}/`
 - **League Home**: `/{country}/{leagueCode}/home/`
@@ -176,4 +243,4 @@ This project is for educational purposes.
 
 ## Credits
 
-Data source: [soccer-rating.com](https://www.soccer-rating.com)
+This application provides global football league rankings and ratings.

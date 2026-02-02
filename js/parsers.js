@@ -1,11 +1,11 @@
 import { CONFIG } from './config.js';
 
-// Enhanced HTML parser for soccer-rating.com team data
+// Enhanced HTML parser for team data
 export function parseTeamDataFromHTML(htmlString, ratingType = 'home') {
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlString, 'text/html');
 
-    // Try multiple table selectors for soccer-rating.com
+    // Try multiple table selectors
     let table = doc.querySelector('table.bigtable.rattab') ||
                doc.querySelector('table.bigtable') ||
                doc.querySelector('table[bgcolor="#ffffff"]') ||

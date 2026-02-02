@@ -7,7 +7,8 @@ import {
     showInfo,
     showTeamsDisplay,
     showOddsView,
-    getSelectedLeagueUrl
+    getSelectedLeagueUrl,
+    updateMarginAdjustment
 } from './ui.js';
 
 // Data stores
@@ -17,6 +18,13 @@ const teamsData = {};
 window.fetcher = {
     clearCache: handleClearCache,
     testConnection: handleTestConnection
+};
+
+// Expose updateMarginAdjustment globally for radio button handlers
+window.updateMarginAdjustment = function(value) {
+    updateMarginAdjustment(value);
+    // Re-trigger odds view to refresh display
+    handleOddsTabClick();
 };
 
 // Handle clear cache button
@@ -33,7 +41,7 @@ function handleClearCache() {
 
 // Handle test connection button
 async function handleTestConnection() {
-    showLoading('Testing connection to soccer-rating.com...');
+    showLoading('Testing connection to data source...');
 
     const result = await testConnection();
 

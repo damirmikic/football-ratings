@@ -1,4 +1,4 @@
-// Configuration specifically for soccer-rating.com
+// Application configuration
 export const CONFIG = {
     BASE_URL: 'https://www.soccer-rating.com',
     ENDPOINTS: {
@@ -8,10 +8,10 @@ export const CONFIG = {
         awayTeams: (country, league) => `/${country}/${league}/away/`,
         generalTeams: (country, league) => `/${country}/${league}/`,
 
-        // Soccer-rating.com specific patterns
+        // Data source specific patterns
         countryRanking: () => '/football-country-ranking/',
 
-        // Complete league data structure from soccer-rating.com
+        // Complete league data structure
         leagueData: {
             "Men's": {
                 "England": ["UK1", "UK2", "UK3", "UK4", "UK5", "UK6N", "UK6S"],
