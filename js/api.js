@@ -25,117 +25,142 @@ function getCacheData(cacheKey, type) {
     return isCacheValid(cacheKey) ? dataCache[type][cacheKey] : null;
 }
 
-// Enhanced fetch with multiple CORS proxy fallbacks
+// Enhanced fetch with serverless function and fallback to CORS proxies
 export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
-    const corsEnabled = document.getElementById('corsProxyCheckbox').checked;
+    const corsEnabled = document.getElementById('corsProxyCheckbox')?.checked || false;
     const isLocalMode = CONFIG.isLocalFile() || CONFIG.isLocalhost();
 
-    // For local files, always use CORS proxy
-    if (isLocalMode && !corsEnabled) {
-        document.getElementById('corsProxyCheckbox').checked = true;
-        console.log('Local file detected - auto-enabling CORS proxy');
+    // Extract the path from the full URL
+    let urlPath = url;
+    if (url.includes('soccer-rating.com')) {
+        urlPath = url.split('soccer-rating.com')[1] || '/';
     }
 
-    // Try direct request first if not in local mode
-    if (!isLocalMode && !corsEnabled) {
+    // Try serverless function first (works on Vercel and local Python server)
+    const backendEndpoints = [
+        '/api/fetch',  // Vercel serverless function
+        'http://localhost:5000/api/fetch'  // Local Python server
+    ];
+
+    for (const endpoint of backendEndpoints) {
         try {
-            console.log('Attempting direct request:', url);
-            const response = await fetch(url, {
+            // Skip localhost endpoint if we're on a remote server
+            if (endpoint.includes('localhost') && !isLocalMode) {
+                continue;
+            }
+
+            const apiUrl = `${endpoint}?url=${encodeURIComponent(urlPath)}`;
+            console.log('Trying backend API:', apiUrl);
+
+            const response = await fetch(apiUrl, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                },
-                mode: 'cors'
+                    'Accept': 'application/json'
+                }
             });
 
             if (response.ok) {
-                console.log(' Direct request successful');
-                return response;
+                const data = await response.json();
+
+                if (data.success) {
+                    console.log(' Backend API successful:', endpoint);
+
+                    // Return a response-like object
+                    return {
+                        ok: true,
+                        status: 200,
+                        text: () => Promise.resolve(data.data)
+                    };
+                }
             }
         } catch (error) {
-            console.warn('Direct request failed, trying CORS proxies:', error.message);
+            console.warn(`Backend API ${endpoint} failed:`, error.message);
         }
     }
 
-    // Extract original URL if it's already proxied
-    let originalUrl = url;
-    for (const proxyBase of CONFIG.CORS_PROXIES) {
-        if (url.includes(proxyBase)) {
-            try {
-                originalUrl = decodeURIComponent(url.split(proxyBase)[1]);
-                break;
-            } catch (e) {
-                console.warn('Error extracting URL from proxy:', e);
+    // Fallback to CORS proxies if backend fails and CORS is enabled
+    if (corsEnabled) {
+        console.log('Backend APIs failed, trying CORS proxies...');
+
+        // Extract original URL if it's already proxied
+        let originalUrl = url;
+        for (const proxyBase of CONFIG.CORS_PROXIES) {
+            if (url.includes(proxyBase)) {
+                try {
+                    originalUrl = decodeURIComponent(url.split(proxyBase)[1]);
+                    break;
+                } catch (e) {
+                    console.warn('Error extracting URL from proxy:', e);
+                }
             }
         }
-    }
 
-    // Try each CORS proxy
-    for (let proxyIndex = 0; proxyIndex < CONFIG.CORS_PROXIES.length; proxyIndex++) {
-        const proxyBase = CONFIG.CORS_PROXIES[proxyIndex];
+        // Try each CORS proxy
+        for (let proxyIndex = 0; proxyIndex < CONFIG.CORS_PROXIES.length; proxyIndex++) {
+            const proxyBase = CONFIG.CORS_PROXIES[proxyIndex];
 
-        for (let attempt = 0; attempt < Math.min(maxRetries, 2); attempt++) {
-            try {
-                let proxyUrl;
+            for (let attempt = 0; attempt < Math.min(maxRetries, 2); attempt++) {
+                try {
+                    let proxyUrl;
 
-                // Different proxy URL formats
-                if (proxyBase.includes('allorigins.win')) {
-                    proxyUrl = proxyBase + encodeURIComponent(originalUrl);
-                } else if (proxyBase.includes('corsproxy.io')) {
-                    proxyUrl = proxyBase + encodeURIComponent(originalUrl);
-                } else if (proxyBase.includes('cors-anywhere')) {
-                    proxyUrl = proxyBase + originalUrl;
-                } else if (proxyBase.includes('thingproxy')) {
-                    proxyUrl = proxyBase + originalUrl;
-                } else {
-                    proxyUrl = proxyBase + encodeURIComponent(originalUrl);
-                }
-
-                console.log(`Trying proxy ${proxyIndex + 1}/${CONFIG.CORS_PROXIES.length}, attempt ${attempt + 1}:`, proxyUrl);
-
-                const response = await fetch(proxyUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': proxyBase.includes('allorigins.win') ? 'application/json' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    }
-                });
-
-                if (response.ok) {
-                    let responseData;
-
+                    // Different proxy URL formats
                     if (proxyBase.includes('allorigins.win')) {
-                        const data = await response.json();
-                        responseData = {
-                            ok: true,
-                            status: 200,
-                            text: () => Promise.resolve(data.contents || data.data || '')
-                        };
+                        proxyUrl = proxyBase + encodeURIComponent(originalUrl);
+                    } else if (proxyBase.includes('corsproxy.io')) {
+                        proxyUrl = proxyBase + encodeURIComponent(originalUrl);
+                    } else if (proxyBase.includes('cors-anywhere')) {
+                        proxyUrl = proxyBase + originalUrl;
+                    } else if (proxyBase.includes('thingproxy')) {
+                        proxyUrl = proxyBase + originalUrl;
                     } else {
-                        responseData = response;
+                        proxyUrl = proxyBase + encodeURIComponent(originalUrl);
                     }
 
-                    console.log(` Proxy ${proxyIndex + 1} successful:`, proxyBase);
+                    console.log(`Trying proxy ${proxyIndex + 1}/${CONFIG.CORS_PROXIES.length}, attempt ${attempt + 1}:`, proxyUrl);
 
-                    // Update CONFIG to use successful proxy for future requests
-                    CONFIG.CORS_PROXY = proxyBase;
+                    const response = await fetch(proxyUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': proxyBase.includes('allorigins.win') ? 'application/json' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        }
+                    });
 
-                    return responseData;
-                }
+                    if (response.ok) {
+                        let responseData;
 
-            } catch (error) {
-                console.warn(`Proxy ${proxyIndex + 1} attempt ${attempt + 1} failed:`, error.message);
+                        if (proxyBase.includes('allorigins.win')) {
+                            const data = await response.json();
+                            responseData = {
+                                ok: true,
+                                status: 200,
+                                text: () => Promise.resolve(data.contents || data.data || '')
+                            };
+                        } else {
+                            responseData = response;
+                        }
 
-                if (attempt < Math.min(maxRetries, 2) - 1) {
-                    await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
+                        console.log(` Proxy ${proxyIndex + 1} successful:`, proxyBase);
+
+                        // Update CONFIG to use successful proxy for future requests
+                        CONFIG.CORS_PROXY = proxyBase;
+
+                        return responseData;
+                    }
+
+                } catch (error) {
+                    console.warn(`Proxy ${proxyIndex + 1} attempt ${attempt + 1} failed:`, error.message);
+
+                    if (attempt < Math.min(maxRetries, 2) - 1) {
+                        await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
+                    }
                 }
             }
         }
     }
 
-    // All proxies failed
-    throw new Error(`All ${CONFIG.CORS_PROXIES.length} CORS proxies failed for URL: ${originalUrl}`);
+    // All methods failed
+    throw new Error(`All fetching methods failed for URL: ${url}. Try enabling CORS proxy mode in settings.`);
 }
 
 // Fetch team data for a specific league
