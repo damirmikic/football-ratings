@@ -337,3 +337,25 @@ export function removeMarginFromDNB(dnbMarketOdds) {
         away: 1 / fairProbAway
     };
 }
+
+/**
+ * Calculate DNB odds from fair 1X2 odds (without margin)
+ * @param {Object} fairOdds - Fair odds {1, X, 2} without margin
+ * @returns {Object} - Fair DNB odds {home, away}
+ */
+export function calculateDNBFromFairOdds(fairOdds) {
+    // Convert fair odds to probabilities
+    const prob1 = 1 / fairOdds['1'];
+    const probX = 1 / fairOdds['X'];
+    const prob2 = 1 / fairOdds['2'];
+
+    // These should already sum to 1.0 (no margin)
+    // Redistribute draw probability between home and away
+    const dnbProbHome = prob1 / (prob1 + prob2);
+    const dnbProbAway = prob2 / (prob1 + prob2);
+
+    return {
+        home: 1 / dnbProbHome,
+        away: 1 / dnbProbAway
+    };
+}

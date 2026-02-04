@@ -12,7 +12,8 @@ import {
     formatMargin,
     calculateDNBFromMarket,
     applyMarginToDNB,
-    removeMarginFromDNB
+    removeMarginFromDNB,
+    calculateDNBFromFairOdds
 } from './odds-calculator.js';
 
 // UI state management
@@ -226,8 +227,15 @@ export function createOddsComparisonTable(odds, teamsData) {
             home: calculatedOdds.dnbHome,
             away: calculatedOdds.dnbAway
         };
-        // Calculate DNB from the adjusted market odds (so margin removal is applied)
-        let displayDNBMarket = calculateDNBFromMarket(displayMarketOdds);
+        let displayDNBMarket;
+
+        if (marginAdjustment === 'removeFromMarket') {
+            // Calculate DNB from margin-free odds (don't re-apply margin)
+            displayDNBMarket = calculateDNBFromFairOdds(displayMarketOdds);
+        } else {
+            // Calculate DNB from market odds (with margin)
+            displayDNBMarket = calculateDNBFromMarket(match.odds);
+        }
 
         if (marginAdjustment === 'applyToCalculated') {
             // Apply margin to calculated DNB odds
