@@ -19,6 +19,7 @@ import {
 // UI state management
 let selectedCountryForTeams = null;
 let selectedLeagueForTeams = null;
+let selectedLeagueCode = null; // Store league code for draw width calibration
 let selectedLeagueUrl = null;
 let selectedTeamsData = null;
 
@@ -166,7 +167,7 @@ export function createOddsTable(odds) {
 let marginAdjustment = 'none'; // Options: 'none', 'applyToCalculated', 'removeFromMarket'
 
 // Create enhanced odds comparison display with calculated odds and value indicators
-export function createOddsComparisonTable(odds, teamsData) {
+export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
     if (!odds || odds.length === 0) {
         return '<div style="padding: 20px; text-align: center; color: #666;">No odds data available</div>';
     }
@@ -203,8 +204,8 @@ export function createOddsComparisonTable(odds, teamsData) {
             return;
         }
 
-        // Calculate odds from ratings
-        let calculatedOdds = calculateOddsFromRatings(homeRating, awayRating);
+        // Calculate odds from ratings (with league-specific draw width)
+        let calculatedOdds = calculateOddsFromRatings(homeRating, awayRating, leagueCode);
 
         // Calculate bookmaker margin
         const bookmakerMargin = calculateBookmakerMargin(match.odds);
@@ -451,6 +452,7 @@ export function showTeamsDisplay(countryName, leagueName, leagueCode, teamData) 
 
     selectedCountryForTeams = countryName;
     selectedLeagueForTeams = leagueName;
+    selectedLeagueCode = leagueCode; // Store for calibrated draw width lookup
     selectedLeagueUrl = teamData.leagueUrl;
     selectedTeamsData = teamData; // Store for odds calculation
 
@@ -600,8 +602,8 @@ export function showOddsView(oddsData) {
     }
 
     if (oddsData && selectedTeamsData) {
-        // Use enhanced comparison table with value indicators
-        oddsDisplay.innerHTML = createOddsComparisonTable(oddsData, selectedTeamsData);
+        // Use enhanced comparison table with value indicators (pass league code for calibrated draw width)
+        oddsDisplay.innerHTML = createOddsComparisonTable(oddsData, selectedTeamsData, selectedLeagueCode);
     } else if (oddsData) {
         // Fallback to simple table if teams data not available
         oddsDisplay.innerHTML = createOddsTable(oddsData);
