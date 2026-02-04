@@ -49,7 +49,9 @@ export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
                 continue;
             }
 
-            const apiUrl = `${endpoint}?url=${encodeURIComponent(urlPath)}`;
+            // Use URLSearchParams to avoid double encoding
+            const params = new URLSearchParams({ url: urlPath });
+            const apiUrl = `${endpoint}?${params.toString()}`;
             console.log('Trying backend API:', apiUrl);
 
             const response = await fetch(apiUrl, {
