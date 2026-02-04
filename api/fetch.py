@@ -4,75 +4,73 @@ This bypasses CORS issues by fetching data server-side
 """
 
 from http.server import BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
 import requests
 import json
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # Parse the URL and query parameters
-        parsed_path = urlparse(self.path)
-        params = parse_qs(parsed_path.query)
-
-        # Get the URL parameter
-        url_param = params.get('url', [''])[0]
-
-        if not url_param:
-            self.send_error(400, "Missing 'url' parameter")
-            return
-
-        # Construct full URL
-        if url_param.startswith('http'):
-            full_url = url_param
-        else:
-            # Remove leading slash if present to avoid double slashes
-            url_param = url_param.lstrip('/')
-            full_url = f"https://www.soccer-rating.com/{url_param}"
-
         try:
+            # Get the URL parameter from query string
+            # The path is like: /api/fetch?url=/England/
+            if '?' not in self.path:
+                self._send_error(400, "Missing 'url' parameter")
+                return
+
+            query_string = self.path.split('?', 1)[1]
+            # Parse url parameter manually to avoid issues
+            url_param = None
+            for param in query_string.split('&'):
+                if param.startswith('url='):
+                    url_param = param[4:]  # Remove 'url='
+                    break
+
+            if not url_param:
+                self._send_error(400, "Missing 'url' parameter")
+                return
+
+            # URL decode the parameter
+            from urllib.parse import unquote
+            url_param = unquote(url_param)
+
+            # Construct full URL
+            if url_param.startswith('http'):
+                full_url = url_param
+            else:
+                # Remove leading slash if present to avoid double slashes
+                url_param = url_param.lstrip('/')
+                full_url = f"https://www.soccer-rating.com/{url_param}"
+
             # Make the request with proper headers
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate',
                 'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
             }
 
             response = requests.get(full_url, headers=headers, timeout=10)
             response.raise_for_status()
 
             # Return success response
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-            self.end_headers()
-
-            result = {
+            self._send_json(200, {
                 'success': True,
                 'data': response.text,
                 'url': full_url
-            }
-
-            self.wfile.write(json.dumps(result).encode())
+            })
 
         except requests.RequestException as e:
-            self.send_response(500)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-
-            result = {
+            self._send_json(500, {
                 'success': False,
                 'error': str(e),
-                'url': full_url
-            }
-
-            self.wfile.write(json.dumps(result).encode())
+                'url': full_url if 'full_url' in locals() else 'unknown'
+            })
+        except Exception as e:
+            self._send_json(500, {
+                'success': False,
+                'error': f"Server error: {str(e)}",
+                'url': 'unknown'
+            })
 
     def do_OPTIONS(self):
         # Handle CORS preflight requests
@@ -81,3 +79,20 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.end_headers()
+
+    def _send_json(self, status_code, data):
+        """Helper to send JSON response"""
+        self.send_response(status_code)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode('utf-8'))
+
+    def _send_error(self, status_code, message):
+        """Helper to send error response"""
+        self._send_json(status_code, {
+            'success': False,
+            'error': message
+        })
