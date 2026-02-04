@@ -226,14 +226,12 @@ export function createOddsComparisonTable(odds, teamsData) {
             home: calculatedOdds.dnbHome,
             away: calculatedOdds.dnbAway
         };
-        let displayDNBMarket = calculateDNBFromMarket(match.odds);
+        // Calculate DNB from the adjusted market odds (so margin removal is applied)
+        let displayDNBMarket = calculateDNBFromMarket(displayMarketOdds);
 
         if (marginAdjustment === 'applyToCalculated') {
             // Apply margin to calculated DNB odds
             displayDNBCalculated = applyMarginToDNB(calculatedOdds.dnbHome, calculatedOdds.dnbAway, bookmakerMargin);
-        } else if (marginAdjustment === 'removeFromMarket') {
-            // Remove margin from market DNB odds
-            displayDNBMarket = removeMarginFromDNB(displayDNBMarket);
         }
 
         // Find value bets
