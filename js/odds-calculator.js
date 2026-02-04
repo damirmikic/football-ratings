@@ -174,6 +174,9 @@ export function findValueBets(comparison) {
  * @returns {string} - Formatted odds (2 decimal places)
  */
 export function formatOdds(odds) {
+    if (odds === undefined || odds === null || isNaN(odds)) {
+        return '-';
+    }
     return odds.toFixed(2);
 }
 
