@@ -297,3 +297,43 @@ export function calculateDNBFromMarket(marketOdds) {
         away: 1 / dnbProb2WithMargin
     };
 }
+
+/**
+ * Apply margin to DNB fair odds
+ * @param {number} dnbHomeOdds - DNB home fair odds
+ * @param {number} dnbAwayOdds - DNB away fair odds
+ * @param {number} margin - Margin to apply
+ * @returns {Object} - DNB odds with margin {home, away}
+ */
+export function applyMarginToDNB(dnbHomeOdds, dnbAwayOdds, margin) {
+    const probHome = 1 / dnbHomeOdds;
+    const probAway = 1 / dnbAwayOdds;
+
+    const totalProb = probHome + probAway;
+    const adjustedProbHome = (probHome / totalProb) * (1 + margin);
+    const adjustedProbAway = (probAway / totalProb) * (1 + margin);
+
+    return {
+        home: 1 / adjustedProbHome,
+        away: 1 / adjustedProbAway
+    };
+}
+
+/**
+ * Remove margin from DNB market odds
+ * @param {Object} dnbMarketOdds - DNB market odds {home, away}
+ * @returns {Object} - DNB fair odds {home, away}
+ */
+export function removeMarginFromDNB(dnbMarketOdds) {
+    const probHome = 1 / dnbMarketOdds.home;
+    const probAway = 1 / dnbMarketOdds.away;
+    const totalProb = probHome + probAway;
+
+    const fairProbHome = probHome / totalProb;
+    const fairProbAway = probAway / totalProb;
+
+    return {
+        home: 1 / fairProbHome,
+        away: 1 / fairProbAway
+    };
+}

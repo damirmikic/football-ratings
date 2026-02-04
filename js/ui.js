@@ -10,7 +10,9 @@ import {
     applyMarginToOdds,
     removeMarginFromOdds,
     formatMargin,
-    calculateDNBFromMarket
+    calculateDNBFromMarket,
+    applyMarginToDNB,
+    removeMarginFromDNB
 } from './odds-calculator.js';
 
 // UI state management
@@ -219,6 +221,21 @@ export function createOddsComparisonTable(odds, teamsData) {
         // Compare odds (use original for EV calculation)
         const comparison = compareOdds(calculatedOdds, match.odds);
 
+        // Calculate adjusted DNB odds based on margin setting
+        let displayDNBCalculated = {
+            home: calculatedOdds.dnbHome,
+            away: calculatedOdds.dnbAway
+        };
+        let displayDNBMarket = calculateDNBFromMarket(match.odds);
+
+        if (marginAdjustment === 'applyToCalculated') {
+            // Apply margin to calculated DNB odds
+            displayDNBCalculated = applyMarginToDNB(calculatedOdds.dnbHome, calculatedOdds.dnbAway, bookmakerMargin);
+        } else if (marginAdjustment === 'removeFromMarket') {
+            // Remove margin from market DNB odds
+            displayDNBMarket = removeMarginFromDNB(displayDNBMarket);
+        }
+
         // Find value bets
         const valueBets = findValueBets(comparison);
         const hasValue = valueBets.length > 0;
@@ -325,11 +342,11 @@ export function createOddsComparisonTable(odds, teamsData) {
                             </div>
                             <div style="text-align: center; margin-bottom: 6px;">
                                 <div style="font-size: 10px; color: #666;">Market</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #006600;">${formatOdds(comparison.dnb.home.market)}</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #006600;">${formatOdds(displayDNBMarket.home)}</div>
                             </div>
                             <div style="text-align: center; margin-bottom: 6px;">
                                 <div style="font-size: 10px; color: #666;">Fair</div>
-                                <div style="font-size: 16px; color: #999;">${formatOdds(comparison.dnb.home.calculated)}</div>
+                                <div style="font-size: 16px; color: #999;">${formatOdds(displayDNBCalculated.home)}</div>
                             </div>
                             <div style="text-align: center;">
                                 <div style="font-size: 10px; color: #666;">EV</div>
@@ -341,7 +358,7 @@ export function createOddsComparisonTable(odds, teamsData) {
                                 ${formatProbability(comparison.dnb.home.probability)}
                             </div>
                         </div>
-                        
+
                         <!-- DNB Away -->
                         <div style="padding: 12px; background-color: white; border-radius: 6px; border: 1px solid ${comparison.dnb.away.hasValue ? '#006600' : '#ddd'}; ${comparison.dnb.away.hasValue ? 'background-color: #f0f8f0;' : ''}">
                             <div style="text-align: center; font-weight: bold; font-size: 12px; color: #333; margin-bottom: 8px;">
@@ -349,11 +366,11 @@ export function createOddsComparisonTable(odds, teamsData) {
                             </div>
                             <div style="text-align: center; margin-bottom: 6px;">
                                 <div style="font-size: 10px; color: #666;">Market</div>
-                                <div style="font-size: 20px; font-weight: bold; color: #006600;">${formatOdds(comparison.dnb.away.market)}</div>
+                                <div style="font-size: 20px; font-weight: bold; color: #006600;">${formatOdds(displayDNBMarket.away)}</div>
                             </div>
                             <div style="text-align: center; margin-bottom: 6px;">
                                 <div style="font-size: 10px; color: #666;">Fair</div>
-                                <div style="font-size: 16px; color: #999;">${formatOdds(comparison.dnb.away.calculated)}</div>
+                                <div style="font-size: 16px; color: #999;">${formatOdds(displayDNBCalculated.away)}</div>
                             </div>
                             <div style="text-align: center;">
                                 <div style="font-size: 10px; color: #666;">EV</div>
