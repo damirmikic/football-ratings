@@ -222,34 +222,30 @@ export function createOddsComparisonTable(odds, teamsData) {
         // Compare odds (use original for EV calculation)
         const comparison = compareOdds(calculatedOdds, match.odds);
 
-        // Calculate adjusted DNB odds based on margin setting
-        let displayDNBCalculated = {
-            home: calculatedOdds.dnbHome,
-            away: calculatedOdds.dnbAway
-        };
-        let displayDNBMarket;
+        // Calculate DNB odds based on margin setting
+        let displayDNBCalculated, displayDNBMarket;
 
         if (marginAdjustment === 'removeFromMarket') {
-            // Calculate DNB from margin-free odds (don't re-apply margin)
+            // Remove margin: use fair DNB for calculated, margin-free DNB for market
+            displayDNBCalculated = {
+                home: calculatedOdds.dnbHome,
+                away: calculatedOdds.dnbAway
+            };
             displayDNBMarket = calculateDNBFromFairOdds(displayMarketOdds);
+
+        } else if (marginAdjustment === 'applyToCalculated') {
+            // Apply margin: use DNB with margin for calculated, normal market DNB for market
+            displayDNBCalculated = applyMarginToDNB(calculatedOdds.dnbHome, calculatedOdds.dnbAway, bookmakerMargin);
+            displayDNBMarket = calculateDNBFromMarket(match.odds);
+
         } else {
-            // Calculate DNB from market odds (with margin)
+            // No adjustment: use fair DNB for calculated, market DNB with margin for market
+            displayDNBCalculated = {
+                home: calculatedOdds.dnbHome,
+                away: calculatedOdds.dnbAway
+            };
             displayDNBMarket = calculateDNBFromMarket(match.odds);
         }
-
-        if (marginAdjustment === 'applyToCalculated') {
-            // Apply margin to calculated DNB odds
-            displayDNBCalculated = applyMarginToDNB(calculatedOdds.dnbHome, calculatedOdds.dnbAway, bookmakerMargin);
-        }
-
-        console.log('DNB Debug:', {
-            match: `${match.homeTeam} vs ${match.awayTeam}`,
-            calculatedDNBHome: calculatedOdds.dnbHome,
-            calculatedDNBAway: calculatedOdds.dnbAway,
-            displayDNBCalculated,
-            displayDNBMarket,
-            marginAdjustment
-        });
 
         // Find value bets
         const valueBets = findValueBets(comparison);
