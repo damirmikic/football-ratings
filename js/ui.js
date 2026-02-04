@@ -242,6 +242,15 @@ export function createOddsComparisonTable(odds, teamsData) {
             displayDNBCalculated = applyMarginToDNB(calculatedOdds.dnbHome, calculatedOdds.dnbAway, bookmakerMargin);
         }
 
+        console.log('DNB Debug:', {
+            match: `${match.homeTeam} vs ${match.awayTeam}`,
+            calculatedDNBHome: calculatedOdds.dnbHome,
+            calculatedDNBAway: calculatedOdds.dnbAway,
+            displayDNBCalculated,
+            displayDNBMarket,
+            marginAdjustment
+        });
+
         // Find value bets
         const valueBets = findValueBets(comparison);
         const hasValue = valueBets.length > 0;
