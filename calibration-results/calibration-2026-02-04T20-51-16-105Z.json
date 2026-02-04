@@ -1,0 +1,191 @@
+{
+  "timestamp": "2026-02-04T20:51:16.106Z",
+  "config": {
+    "seasons": [
+      "2324",
+      "2223",
+      "2122"
+    ],
+    "leagues": [
+      {
+        "code": "E0",
+        "name": "premier-league",
+        "country": "England",
+        "division": "Premier League"
+      },
+      {
+        "code": "I1",
+        "name": "serie-a",
+        "country": "Italy",
+        "division": "Serie A"
+      },
+      {
+        "code": "SP1",
+        "name": "la-liga",
+        "country": "Spain",
+        "division": "La Liga"
+      },
+      {
+        "code": "D1",
+        "name": "bundesliga",
+        "country": "Germany",
+        "division": "Bundesliga"
+      },
+      {
+        "code": "F1",
+        "name": "ligue-1",
+        "country": "France",
+        "division": "Ligue 1"
+      }
+    ],
+    "minDrawWidth": 50,
+    "maxDrawWidth": 150,
+    "step": 5,
+    "initialRating": 1500,
+    "kFactor": 32,
+    "outputDir": "./calibration-results",
+    "configOutputPath": "./js/draw-width-config.js"
+  },
+  "global": {
+    "matches": 0,
+    "outcomes": {
+      "homeWins": "NaN",
+      "draws": "NaN",
+      "awayWins": "NaN",
+      "total": 0
+    },
+    "calibration": {
+      "optimalWidth": 90,
+      "logLoss": null,
+      "allResults": [
+        {
+          "width": 50,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 55,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 60,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 65,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 70,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 75,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 80,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 85,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 90,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 95,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 100,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 105,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 110,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 115,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 120,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 125,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 130,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 135,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 140,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 145,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        },
+        {
+          "width": 150,
+          "logLoss": null,
+          "brierScore": null,
+          "accuracy": 0
+        }
+      ]
+    }
+  },
+  "leagues": {}
+}
