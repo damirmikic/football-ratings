@@ -310,17 +310,7 @@ export const CONFIG = {
         }
     },
 
-    // Multiple CORS proxy options
-    CORS_PROXIES: [
-        'https://corsproxy.io/?',
-        'https://cors-anywhere.herokuapp.com/',
-        'https://api.allorigins.win/get?url=',
-        'https://thingproxy.freeboard.io/fetch/'
-    ],
-
-    // Current proxy settings
-    CORS_PROXY: 'https://corsproxy.io/?',
-    USE_CORS_PROXY: true,
+    // Cache and retry settings
     CACHE_DURATION: 3600000, // 1 hour (60 minutes)
     MAX_RETRIES: 3,
     RETRY_DELAY: 1000,

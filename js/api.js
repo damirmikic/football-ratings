@@ -6,9 +6,7 @@ const dataCache = { leagues: {}, teams: {}, odds: {}, timestamps: {} };
 
 // Utility functions
 export function buildURL(endpoint) {
-    const url = CONFIG.BASE_URL + endpoint;
-    const corsEnabled = document.getElementById('corsProxyCheckbox').checked;
-    return corsEnabled ? CONFIG.CORS_PROXY + encodeURIComponent(url) : url;
+    return CONFIG.BASE_URL + endpoint;
 }
 
 function isCacheValid(cacheKey) {
@@ -25,9 +23,8 @@ function getCacheData(cacheKey, type) {
     return isCacheValid(cacheKey) ? dataCache[type][cacheKey] : null;
 }
 
-// Enhanced fetch with serverless function and fallback to CORS proxies
+// Fetch data using serverless function
 export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
-    const corsEnabled = document.getElementById('corsProxyCheckbox')?.checked || false;
     const isLocalMode = CONFIG.isLocalFile() || CONFIG.isLocalhost();
 
     // Extract the path from the full URL
@@ -36,133 +33,65 @@ export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
         urlPath = url.split('soccer-rating.com')[1] || '/';
     }
 
-    // Try serverless function first (works on Vercel and local Python server)
+    // Try serverless function (works on Vercel and local Python server)
     const backendEndpoints = [
         '/api/fetch',  // Vercel serverless function
         'http://localhost:5000/api/fetch'  // Local Python server
     ];
 
     for (const endpoint of backendEndpoints) {
-        try {
-            // Skip localhost endpoint if we're on a remote server
-            if (endpoint.includes('localhost') && !isLocalMode) {
-                continue;
-            }
-
-            // Use URLSearchParams to avoid double encoding
-            const params = new URLSearchParams({ url: urlPath });
-            const apiUrl = `${endpoint}?${params.toString()}`;
-            console.log('Trying backend API:', apiUrl);
-
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                // Skip localhost endpoint if we're on a remote server
+                if (endpoint.includes('localhost') && !isLocalMode) {
+                    continue;
                 }
-            });
 
-            if (response.ok) {
-                const data = await response.json();
+                // Use URLSearchParams to avoid double encoding
+                const params = new URLSearchParams({ url: urlPath });
+                const apiUrl = `${endpoint}?${params.toString()}`;
+                console.log(`Trying backend API (attempt ${attempt + 1}/${maxRetries}):`, apiUrl);
 
-                if (data.success) {
-                    console.log(' Backend API successful:', endpoint);
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
 
-                    // Return a response-like object
-                    return {
-                        ok: true,
-                        status: 200,
-                        text: () => Promise.resolve(data.data)
-                    };
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.success) {
+                        console.log('✓ Backend API successful:', endpoint);
+
+                        // Return a response-like object
+                        return {
+                            ok: true,
+                            status: 200,
+                            text: () => Promise.resolve(data.data)
+                        };
+                    }
                 }
-            }
-        } catch (error) {
-            console.warn(`Backend API ${endpoint} failed:`, error.message);
-        }
-    }
 
-    // Fallback to CORS proxies if backend fails and CORS is enabled
-    if (corsEnabled) {
-        console.log('Backend APIs failed, trying CORS proxies...');
-
-        // Extract original URL if it's already proxied
-        let originalUrl = url;
-        for (const proxyBase of CONFIG.CORS_PROXIES) {
-            if (url.includes(proxyBase)) {
-                try {
-                    originalUrl = decodeURIComponent(url.split(proxyBase)[1]);
-                    break;
-                } catch (e) {
-                    console.warn('Error extracting URL from proxy:', e);
+                // If response not OK, retry
+                if (attempt < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
                 }
-            }
-        }
 
-        // Try each CORS proxy
-        for (let proxyIndex = 0; proxyIndex < CONFIG.CORS_PROXIES.length; proxyIndex++) {
-            const proxyBase = CONFIG.CORS_PROXIES[proxyIndex];
+            } catch (error) {
+                console.warn(`Backend API ${endpoint} failed (attempt ${attempt + 1}):`, error.message);
 
-            for (let attempt = 0; attempt < Math.min(maxRetries, 2); attempt++) {
-                try {
-                    let proxyUrl;
-
-                    // Different proxy URL formats
-                    if (proxyBase.includes('allorigins.win')) {
-                        proxyUrl = proxyBase + encodeURIComponent(originalUrl);
-                    } else if (proxyBase.includes('corsproxy.io')) {
-                        proxyUrl = proxyBase + encodeURIComponent(originalUrl);
-                    } else if (proxyBase.includes('cors-anywhere')) {
-                        proxyUrl = proxyBase + originalUrl;
-                    } else if (proxyBase.includes('thingproxy')) {
-                        proxyUrl = proxyBase + originalUrl;
-                    } else {
-                        proxyUrl = proxyBase + encodeURIComponent(originalUrl);
-                    }
-
-                    console.log(`Trying proxy ${proxyIndex + 1}/${CONFIG.CORS_PROXIES.length}, attempt ${attempt + 1}:`, proxyUrl);
-
-                    const response = await fetch(proxyUrl, {
-                        method: 'GET',
-                        headers: {
-                            'Accept': proxyBase.includes('allorigins.win') ? 'application/json' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                        }
-                    });
-
-                    if (response.ok) {
-                        let responseData;
-
-                        if (proxyBase.includes('allorigins.win')) {
-                            const data = await response.json();
-                            responseData = {
-                                ok: true,
-                                status: 200,
-                                text: () => Promise.resolve(data.contents || data.data || '')
-                            };
-                        } else {
-                            responseData = response;
-                        }
-
-                        console.log(` Proxy ${proxyIndex + 1} successful:`, proxyBase);
-
-                        // Update CONFIG to use successful proxy for future requests
-                        CONFIG.CORS_PROXY = proxyBase;
-
-                        return responseData;
-                    }
-
-                } catch (error) {
-                    console.warn(`Proxy ${proxyIndex + 1} attempt ${attempt + 1} failed:`, error.message);
-
-                    if (attempt < Math.min(maxRetries, 2) - 1) {
-                        await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
-                    }
+                // Retry on error
+                if (attempt < maxRetries - 1) {
+                    await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
                 }
             }
         }
     }
 
     // All methods failed
-    throw new Error(`All fetching methods failed for URL: ${url}. Try enabling CORS proxy mode in settings.`);
+    throw new Error(`Failed to fetch data from: ${url}`);
 }
 
 // Fetch team data for a specific league
@@ -205,7 +134,7 @@ export async function fetchTeamData(countryName, leagueName, leagueCode = null) 
                         awayTeams = parseTeamDataFromHTML(awayHTML, 'away');
 
                         if (homeTeams.length > 0 || awayTeams.length > 0) {
-                            console.log(' Successfully fetched team data:', { home: homeTeams.length, away: awayTeams.length });
+                            console.log('✓ Successfully fetched team data:', { home: homeTeams.length, away: awayTeams.length });
                             break;
                         }
                     }
@@ -222,14 +151,14 @@ export async function fetchTeamData(countryName, leagueName, leagueCode = null) 
                         if (teams.length > 0) {
                             homeTeams = teams;
                             awayTeams = teams;
-                            console.log(' Successfully fetched general team data:', teams.length);
+                            console.log('✓ Successfully fetched general team data:', teams.length);
                             break;
                         }
                     }
                 }
             } catch (error) {
                 lastError = error;
-                console.warn(' Pattern failed:', error.message);
+                console.warn('✗ Pattern failed:', error.message);
             }
         }
 
@@ -308,13 +237,13 @@ export async function fetchLeagueData(countryName) {
                     leagues = parseLeagueDataFromHTML(html);
 
                     if (leagues.length > 0) {
-                        console.log(` Successfully fetched ${leagues.length} leagues from:`, endpoint);
+                        console.log(`✓ Successfully fetched ${leagues.length} leagues from:`, endpoint);
                         break;
                     }
                 }
             } catch (error) {
                 lastError = error;
-                console.warn(' Endpoint failed:', endpoint, error.message);
+                console.warn('✗ Endpoint failed:', endpoint, error.message);
             }
         }
 
@@ -385,7 +314,7 @@ export async function testConnection() {
         if (response.ok) {
             const html = await response.text();
             if (html.length > 100) {
-                return { success: true, message: ' Connection successful! Ready to fetch data.' };
+                return { success: true, message: '✓ Connection successful! Ready to fetch data.' };
             } else {
                 throw new Error('Empty or invalid response');
             }
@@ -393,6 +322,6 @@ export async function testConnection() {
             throw new Error(`HTTP ${response.status}`);
         }
     } catch (error) {
-        return { success: false, message: ` Connection failed: ${error.message}` };
+        return { success: false, message: `✗ Connection failed: ${error.message}` };
     }
 }

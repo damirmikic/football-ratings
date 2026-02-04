@@ -13,11 +13,9 @@
                 Global Countries & Leagues
             </div>
             <div class="config-panel">
-                <div class="status">Connected to data source</div>
-                <div class="info">CORS proxy enabled for cross-origin requests</div>
+                <div class="status">Connected via serverless API</div>
                 <button onclick="fetcher.clearCache()">Clear Cache</button>
                 <button onclick="fetcher.testConnection()">Test Connection</button>
-                <label><input type="checkbox" id="corsProxyCheckbox" checked> Use CORS Proxy</label>
             </div>
             <div id="countriesList"></div>
         </div>
@@ -37,11 +35,12 @@
                 3. Switch between Home/Away ratings and Odds views<br><br>
                 <strong>Features:</strong><br>
                 - Live team rating data<br>
-                - Automatic CORS proxy handling<br>
+                - Serverless backend API<br>
                 - Smart caching (1-hour duration)<br>
                 - Multiple URL pattern fallbacks<br>
                 - Coverage of 90+ countries worldwide<br>
-                - Advanced odds calculation and value betting<br><br>
+                - Advanced odds calculation and value betting<br>
+                - Draw No Bet (DNB) odds analysis<br><br>
                 <em>Start by selecting any country to see their leagues!</em>
             </div>
 
