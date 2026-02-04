@@ -19,13 +19,24 @@ const CONFIG = {
   // Seasons to fetch (football-data.co.uk format)
   seasons: ['2324', '2223', '2122'],  // 2023-24, 2022-23, 2021-22
 
-  // Leagues to calibrate
+  // Leagues to calibrate (football-data.co.uk codes)
+  // Format: { code: 'data source code', name: 'our internal name', country: 'display', division: 'display' }
   leagues: [
+    // Top 5 European leagues (most data available)
     { code: 'E0', name: 'premier-league', country: 'England', division: 'Premier League' },
     { code: 'I1', name: 'serie-a', country: 'Italy', division: 'Serie A' },
     { code: 'SP1', name: 'la-liga', country: 'Spain', division: 'La Liga' },
     { code: 'D1', name: 'bundesliga', country: 'Germany', division: 'Bundesliga' },
-    { code: 'F1', name: 'ligue-1', country: 'France', division: 'Ligue 1' }
+    { code: 'F1', name: 'ligue-1', country: 'France', division: 'Ligue 1' },
+
+    // Additional European leagues (if you want more calibration)
+    { code: 'E1', name: 'championship', country: 'England', division: 'Championship' },
+    { code: 'N1', name: 'eredivisie', country: 'Netherlands', division: 'Eredivisie' },
+    { code: 'B1', name: 'pro-league', country: 'Belgium', division: 'Belgian Pro League' },
+    { code: 'P1', name: 'primeira-liga', country: 'Portugal', division: 'Primeira Liga' },
+    { code: 'T1', name: 'super-lig', country: 'Turkey', division: 'Süper Lig' },
+    { code: 'G1', name: 'super-league-greece', country: 'Greece', division: 'Super League' },
+    { code: 'SC0', name: 'scottish-premiership', country: 'Scotland', division: 'Premiership' }
   ],
 
   // Calibration parameters
