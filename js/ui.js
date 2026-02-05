@@ -22,6 +22,7 @@ let selectedLeagueForTeams = null;
 let selectedLeagueCode = null; // Store league code for draw width calibration
 let selectedLeagueUrl = null;
 let selectedTeamsData = null;
+let selectedOddsData = null; // Store current odds data for margin adjustment updates
 
 // Loading overlay
 export function showLoading(message) {
@@ -596,17 +597,22 @@ export function showOddsView(oddsData) {
 
     const oddsDisplay = document.getElementById('oddsDisplay');
 
+    // Store odds data for margin adjustment updates
+    if (oddsData !== undefined) {
+        selectedOddsData = oddsData;
+    }
+
     if (!selectedLeagueUrl) {
         oddsDisplay.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Please select a league first to see the odds.</div>';
         return;
     }
 
-    if (oddsData && selectedTeamsData) {
+    if (selectedOddsData && selectedTeamsData) {
         // Use enhanced comparison table with value indicators (pass league code for calibrated draw width)
-        oddsDisplay.innerHTML = createOddsComparisonTable(oddsData, selectedTeamsData, selectedLeagueCode);
-    } else if (oddsData) {
+        oddsDisplay.innerHTML = createOddsComparisonTable(selectedOddsData, selectedTeamsData, selectedLeagueCode);
+    } else if (selectedOddsData) {
         // Fallback to simple table if teams data not available
-        oddsDisplay.innerHTML = createOddsTable(oddsData);
+        oddsDisplay.innerHTML = createOddsTable(selectedOddsData);
     } else {
         oddsDisplay.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No odds data available for this league.</div>';
     }
@@ -632,7 +638,6 @@ export function getSelectedTeamsData() {
 // Update margin adjustment setting and refresh odds display
 export function updateMarginAdjustment(newValue) {
     marginAdjustment = newValue;
-    // Trigger odds view refresh by dispatching a custom event
-    const event = new CustomEvent('marginAdjustmentChanged');
-    document.dispatchEvent(event);
+    // Refresh the odds display with the new margin adjustment
+    showOddsView();
 }
