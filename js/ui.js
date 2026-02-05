@@ -227,6 +227,8 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
         // Calculate DNB odds based on margin setting
         let displayDNBCalculated, displayDNBMarket;
 
+        console.log(`${match.homeTeam} vs ${match.awayTeam}: margin adjustment = ${marginAdjustment}`);
+
         if (marginAdjustment === 'removeFromMarket') {
             // Remove margin: use fair DNB for calculated, margin-free DNB for market
             displayDNBCalculated = {
@@ -234,11 +236,14 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
                 away: calculatedOdds.dnbAway
             };
             displayDNBMarket = calculateDNBFromFairOdds(displayMarketOdds);
+            console.log('removeFromMarket - DNB Market (fair):', displayDNBMarket);
 
         } else if (marginAdjustment === 'applyToCalculated') {
             // Apply margin: use DNB with margin for calculated, normal market DNB for market
             displayDNBCalculated = applyMarginToDNB(calculatedOdds.dnbHome, calculatedOdds.dnbAway, bookmakerMargin);
             displayDNBMarket = calculateDNBFromMarket(match.odds);
+            console.log('applyToCalculated - DNB Calculated (with margin):', displayDNBCalculated);
+            console.log('applyToCalculated - DNB Market (with margin):', displayDNBMarket);
 
         } else {
             // No adjustment: use fair DNB for calculated, market DNB with margin for market
@@ -247,6 +252,8 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
                 away: calculatedOdds.dnbAway
             };
             displayDNBMarket = calculateDNBFromMarket(match.odds);
+            console.log('none - DNB Calculated (fair):', displayDNBCalculated);
+            console.log('none - DNB Market (with margin):', displayDNBMarket);
         }
 
         // Find value bets
@@ -637,7 +644,9 @@ export function getSelectedTeamsData() {
 
 // Update margin adjustment setting and refresh odds display
 export function updateMarginAdjustment(newValue) {
+    console.log('Updating margin adjustment from', marginAdjustment, 'to', newValue);
     marginAdjustment = newValue;
+    console.log('Refreshing odds view');
     // Refresh the odds display with the new margin adjustment
     showOddsView();
 }

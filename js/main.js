@@ -24,8 +24,6 @@ window.fetcher = {
 // Expose updateMarginAdjustment globally for radio button handlers
 window.updateMarginAdjustment = function(value) {
     updateMarginAdjustment(value);
-    // Re-trigger odds view to refresh display
-    handleOddsTabClick();
 };
 
 // Handle clear cache button
