@@ -1,4 +1,4 @@
-import { fetchTeamData, fetchOddsData, clearCache, testConnection } from './api.js';
+import { fetchTeamData, fetchOddsData, fetchLeagueTable, clearCache, testConnection } from './api.js';
 import {
     createCountriesList,
     showLoading,
@@ -9,7 +9,8 @@ import {
     showOddsView,
     showAboutView,
     getSelectedLeagueUrl,
-    updateMarginAdjustment
+    updateMarginAdjustment,
+    setLeagueTable
 } from './ui.js';
 
 // Data stores
@@ -68,7 +69,14 @@ async function handleLeagueClick(event) {
     if (!teamData) {
         try {
             showLoading(`Loading ${leagueName} team data...`);
-            teamData = await fetchTeamData(countryName, leagueName, leagueCode);
+
+            // Fetch team ratings and league table in parallel
+            const [fetchedTeamData, leagueTable] = await Promise.all([
+                fetchTeamData(countryName, leagueName, leagueCode),
+                fetchLeagueTable(countryName, leagueCode)
+            ]);
+
+            teamData = fetchedTeamData;
 
             // Store the data
             if (!teamsData[countryName]) {
@@ -76,8 +84,12 @@ async function handleLeagueClick(event) {
             }
             teamsData[countryName][leagueName] = teamData;
 
+            // Set league table for Poisson+DC model
+            setLeagueTable(leagueTable);
+
             hideLoading();
-            showInfo(`Successfully loaded ${teamData.home.length + teamData.away.length} team records for ${leagueName}`);
+            const tableInfo = leagueTable ? ` + league table (${Object.keys(leagueTable.teams).length} teams)` : '';
+            showInfo(`Successfully loaded ${teamData.home.length + teamData.away.length} team records for ${leagueName}${tableInfo}`);
         } catch (error) {
             hideLoading();
             showError(`Failed to load team data for ${leagueName}. ${error.message}`);

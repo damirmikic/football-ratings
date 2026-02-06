@@ -144,6 +144,84 @@ export function parseLeagueDataFromHTML(htmlString) {
     return leagues;
 }
 
+// Parse league table (ltable) from HTML to extract team goal stats
+export function parseLeagueTableFromHTML(htmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+
+    const table = doc.getElementById('ltable') || doc.querySelector('table.ltable');
+    if (!table) {
+        console.warn('No league table (ltable) found in HTML');
+        return null;
+    }
+
+    const teams = {};
+    let leagueTotalHomeGoals = 0;
+    let leagueTotalAwayGoals = 0;
+    let leagueTotalHomeMatches = 0;
+    let leagueTotalAwayMatches = 0;
+
+    const rows = table.querySelectorAll('tr');
+    for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.querySelectorAll('td');
+
+        // Need at least 18 cells for full home/away data
+        if (cells.length < 18) continue;
+
+        try {
+            const teamCell = cells[1];
+            const teamLink = teamCell.querySelector('a');
+            const teamName = teamLink ? teamLink.textContent.trim() : teamCell.textContent.trim();
+            if (!teamName) continue;
+
+            // Home stats: cells[8]=M, cells[12]=Goals (GF:GA)
+            const homeMatches = parseInt(cells[8].textContent.trim()) || 0;
+            const homeGoals = cells[12].textContent.trim();
+            const [homeGF, homeGA] = homeGoals.split(':').map(Number);
+
+            // Away stats: cells[13]=M, cells[17]=Goals (GF:GA)
+            const awayMatches = parseInt(cells[13].textContent.trim()) || 0;
+            const awayGoals = cells[17].textContent.trim();
+            const [awayGF, awayGA] = awayGoals.split(':').map(Number);
+
+            if (isNaN(homeGF) || isNaN(awayGF) || homeMatches === 0 || awayMatches === 0) continue;
+
+            teams[teamName] = {
+                homeMatches, homeGF, homeGA,
+                awayMatches, awayGF, awayGA,
+                homeGFPerMatch: homeGF / homeMatches,
+                homeGAPerMatch: homeGA / homeMatches,
+                awayGFPerMatch: awayGF / awayMatches,
+                awayGAPerMatch: awayGA / awayMatches
+            };
+
+            leagueTotalHomeGoals += homeGF;
+            leagueTotalAwayGoals += awayGF;
+            leagueTotalHomeMatches += homeMatches;
+            leagueTotalAwayMatches += awayMatches;
+        } catch (e) {
+            console.warn('Error parsing league table row:', e);
+        }
+    }
+
+    const teamCount = Object.keys(teams).length;
+    if (teamCount === 0) return null;
+
+    const leagueAvgHomeGoals = leagueTotalHomeGoals / leagueTotalHomeMatches;
+    const leagueAvgAwayGoals = leagueTotalAwayGoals / leagueTotalAwayMatches;
+
+    console.log(`Parsed league table: ${teamCount} teams, avg home goals: ${leagueAvgHomeGoals.toFixed(2)}, avg away goals: ${leagueAvgAwayGoals.toFixed(2)}`);
+
+    return {
+        teams,
+        leagueAvgHomeGoals,
+        leagueAvgAwayGoals,
+        leagueTotalHomeMatches,
+        leagueTotalAwayMatches
+    };
+}
+
 // Parse odds data from HTML
 export function parseOddsDataFromHTML(htmlString) {
     const parser = new DOMParser();

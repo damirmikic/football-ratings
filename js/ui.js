@@ -1,6 +1,7 @@
 import { CONFIG, countries } from './config.js';
 import {
     calculateOddsFromRatings,
+    calculateOddsWithPoisson,
     compareOdds,
     formatOdds,
     formatProbability,
@@ -23,6 +24,7 @@ let selectedLeagueCode = null; // Store league code for draw width calibration
 let selectedLeagueUrl = null;
 let selectedTeamsData = null;
 let selectedOddsData = null; // Store current odds data for margin adjustment updates
+let selectedLeagueTable = null; // Store league table data for Poisson xG model
 
 // Loading overlay
 export function showLoading(message) {
@@ -205,8 +207,14 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
             return;
         }
 
-        // Calculate odds from ratings (with league-specific draw width)
-        let calculatedOdds = calculateOddsFromRatings(homeRating, awayRating, leagueCode);
+        // Calculate odds: prefer Poisson+DC model if league table available, fallback to Elo draw-width
+        let calculatedOdds = null;
+        if (selectedLeagueTable) {
+            calculatedOdds = calculateOddsWithPoisson(homeRating, awayRating, match.homeTeam, match.awayTeam, selectedLeagueTable);
+        }
+        if (!calculatedOdds) {
+            calculatedOdds = calculateOddsFromRatings(homeRating, awayRating, leagueCode);
+        }
 
         // Calculate bookmaker margin
         const bookmakerMargin = calculateBookmakerMargin(match.odds);
@@ -270,6 +278,7 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
                     </div>
                     <div style="font-size: 11px; color: #666; text-align: center; margin-top: 5px;">
                         Bookmaker Margin: ${formatMargin(bookmakerMargin)} | Ratings: ${homeRating.toFixed(1)} vs ${awayRating.toFixed(1)}
+                        ${calculatedOdds.model === 'poisson-dc' ? ` | xG: ${calculatedOdds.homeXG.toFixed(2)} - ${calculatedOdds.awayXG.toFixed(2)} (${calculatedOdds.totalXG.toFixed(2)})` : ''}
                         ${hasValue ? ' | <strong style="color: #006600;">VALUE OPPORTUNITY</strong>' : ''}
                     </div>
                 </div>
@@ -530,20 +539,22 @@ export function showAboutView() {
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
                 <h3 style="color: #006600; margin-bottom: 15px;">How Odds Calculation Works</h3>
                 <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
-                    The application uses a 3-way Elo-based formula to calculate match probabilities from team ratings:
+                    The application uses a <strong>Poisson + Dixon-Coles</strong> hybrid model that combines Elo ratings with league table data:
                 </p>
                 <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; font-family: monospace; margin-bottom: 10px; font-size: 13px;">
-                    P(Home) = F(diff - drawWidth)<br>
-                    P(Draw) = F(diff + drawWidth) - F(diff - drawWidth)<br>
-                    P(Away) = 1 - F(diff + drawWidth)<br>
-                    <span style="color: #666; font-size: 11px;">*where F(x) = 1 / (1 + 10^(-x/400)) and diff = HomeRating - AwayRating</span>
+                    1. Elo ratings &rarr; DNB (winner) probabilities<br>
+                    2. League table &rarr; match-specific total xG<br>
+                    3. Binary search &rarr; distribute xG to match DNB<br>
+                    4. Poisson scoreline matrix + Dixon-Coles &rarr; 1X2<br>
+                    <span style="color: #666; font-size: 11px;">*Falls back to Elo draw-width model when league table is unavailable</span>
                 </div>
                 <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
-                    Model Parameters:
+                    Key Features:
                 </p>
                 <ul style="line-height: 1.8; color: #333;">
-                    <li><strong>Draw Width:</strong> 90 points (calibrated for ~25% base draw rate)</li>
-                    <li><strong>Expected Value:</strong> Calculated as (Market Odds / Fair Odds - 1) × 100%</li>
+                    <li><strong>xG from Table:</strong> Match-specific expected goals derived from home/away scoring stats</li>
+                    <li><strong>Dixon-Coles:</strong> Corrects Poisson for low-scoring outcomes where draws cluster</li>
+                    <li><strong>Expected Value:</strong> Calculated as (Market Odds / Fair Odds - 1) x 100%</li>
                 </ul>
             </div>
 
@@ -623,6 +634,11 @@ export function showOddsView(oddsData) {
     } else {
         oddsDisplay.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No odds data available for this league.</div>';
     }
+}
+
+// Set league table data for Poisson model
+export function setLeagueTable(tableData) {
+    selectedLeagueTable = tableData;
 }
 
 // Getters for selected data

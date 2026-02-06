@@ -4,6 +4,7 @@
  */
 
 import { getDrawWidth } from './draw-width-config.js';
+import { calculatePoissonProbabilities, calculateMatchTotalXG } from './poisson-model.js';
 
 /**
  * Calculate match outcome probabilities including draw
@@ -80,6 +81,49 @@ export function calculateOddsFromRatings(homeRating, awayRating, leagueCode = nu
             home: dnbHomeProb,
             away: dnbAwayProb
         }
+    };
+}
+
+/**
+ * Calculate fair odds using Poisson + Dixon-Coles model
+ * Uses Elo ratings for DNB (winner) and league table for match-specific xG
+ *
+ * @param {number} homeRating - Home team Elo rating
+ * @param {number} awayRating - Away team Elo rating
+ * @param {string} homeTeam - Home team name
+ * @param {string} awayTeam - Away team name
+ * @param {Object} leagueTable - Parsed league table data
+ * @returns {Object|null} - Calculated odds or null if table data unavailable
+ */
+export function calculateOddsWithPoisson(homeRating, awayRating, homeTeam, awayTeam, leagueTable) {
+    const totalXG = calculateMatchTotalXG(homeTeam, awayTeam, leagueTable);
+    if (totalXG === null || totalXG <= 0) return null;
+
+    const probabilities = calculatePoissonProbabilities(homeRating, awayRating, totalXG);
+
+    // DNB probabilities
+    const dnbHomeProb = probabilities.home / (probabilities.home + probabilities.away);
+    const dnbAwayProb = probabilities.away / (probabilities.home + probabilities.away);
+
+    return {
+        home: probabilityToOdds(probabilities.home),
+        draw: probabilityToOdds(probabilities.draw),
+        away: probabilityToOdds(probabilities.away),
+        dnbHome: probabilityToOdds(dnbHomeProb),
+        dnbAway: probabilityToOdds(dnbAwayProb),
+        probabilities: {
+            home: probabilities.home,
+            draw: probabilities.draw,
+            away: probabilities.away
+        },
+        dnbProbabilities: {
+            home: dnbHomeProb,
+            away: dnbAwayProb
+        },
+        homeXG: probabilities.homeXG,
+        awayXG: probabilities.awayXG,
+        totalXG: totalXG,
+        model: 'poisson-dc'
     };
 }
 
