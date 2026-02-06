@@ -206,8 +206,13 @@ function findTeamInTable(teamName, teams) {
 }
 
 /**
- * Calculate match-specific total xG from league table data
- * totalXG = homeTeam's home GF/match + awayTeam's away GF/match
+ * Calculate match-specific total xG from league table data using attack/defense strength model
+ *
+ * Uses league averages to derive relative attack strength and defense weakness:
+ *   homeAttackStrength = homeTeam.homeGFPerMatch / leagueAvgHomeGoals
+ *   awayDefenseWeakness = awayTeam.awayGAPerMatch / leagueAvgAwayGoals (goals conceded away)
+ *   expectedHomeGoals = homeAttackStrength * awayDefenseWeakness * leagueAvgHomeGoals
+ *   (mirrored for away team)
  *
  * @param {string} homeTeam - Home team name
  * @param {string} awayTeam - Away team name
@@ -225,7 +230,72 @@ export function calculateMatchTotalXG(homeTeam, awayTeam, leagueTable) {
         return null;
     }
 
-    return homeData.homeGFPerMatch + awayData.awayGFPerMatch;
+    const avgHome = leagueTable.leagueAvgHomeGoals;
+    const avgAway = leagueTable.leagueAvgAwayGoals;
+
+    if (!avgHome || !avgAway || avgHome <= 0 || avgAway <= 0) {
+        // Fallback to simple sum if league averages unavailable
+        return homeData.homeGFPerMatch + awayData.awayGFPerMatch;
+    }
+
+    // Attack strength relative to league average
+    const homeAttackStrength = homeData.homeGFPerMatch / avgHome;
+    const awayAttackStrength = awayData.awayGFPerMatch / avgAway;
+
+    // Defense weakness relative to league average (goals conceded)
+    // Away team's away GA/match vs league avg away goals (from perspective of away defense)
+    // Home team's home GA/match vs league avg home goals (from perspective of home defense)
+    const awayDefenseWeakness = awayData.awayGAPerMatch / avgHome;  // away team concedes vs league home avg
+    const homeDefenseWeakness = homeData.homeGAPerMatch / avgAway;  // home team concedes vs league away avg
+
+    // Expected goals using attack * defense * league average
+    const expectedHomeGoals = homeAttackStrength * awayDefenseWeakness * avgHome;
+    const expectedAwayGoals = awayAttackStrength * homeDefenseWeakness * avgAway;
+
+    const totalXG = expectedHomeGoals + expectedAwayGoals;
+
+    console.log(`xG model: ${homeTeam} (att=${homeAttackStrength.toFixed(2)}) vs ${awayTeam} (att=${awayAttackStrength.toFixed(2)}) → home=${expectedHomeGoals.toFixed(2)}, away=${expectedAwayGoals.toFixed(2)}, total=${totalXG.toFixed(2)}`);
+
+    return totalXG;
+}
+
+/**
+ * Find team stats for display in odds tab (position, goals per match)
+ *
+ * @param {string} teamName - Team name
+ * @param {Object} leagueTable - Parsed league table data
+ * @returns {Object|null} - { position, homeGPM, awayGPM } or null
+ */
+export function findTeamDisplayStats(teamName, leagueTable) {
+    if (!leagueTable || !leagueTable.standings) return null;
+
+    const teamData = findTeamInTable(teamName, leagueTable.teams);
+    if (!teamData) return null;
+
+    // Find position in standings using same fuzzy matching
+    let position = null;
+    const normalizedInput = normalizeTeamName(teamName);
+    for (let i = 0; i < leagueTable.standings.length; i++) {
+        const s = leagueTable.standings[i];
+        if (s.name === teamName || normalizeTeamName(s.name) === normalizedInput) {
+            position = i + 1;
+            break;
+        }
+        // Substring match fallback
+        const normalizedStanding = normalizeTeamName(s.name);
+        const shorter = normalizedInput.length <= normalizedStanding.length ? normalizedInput : normalizedStanding;
+        const longer = normalizedInput.length > normalizedStanding.length ? normalizedInput : normalizedStanding;
+        if (shorter.length >= 4 && (longer.startsWith(shorter) || longer.includes(shorter))) {
+            position = i + 1;
+            break;
+        }
+    }
+
+    return {
+        position,
+        homeGPM: teamData.homeGFPerMatch,
+        awayGPM: teamData.awayGFPerMatch
+    };
 }
 
 /**

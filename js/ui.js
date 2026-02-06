@@ -16,6 +16,7 @@ import {
     removeMarginFromDNB,
     calculateDNBFromFairOdds
 } from './odds-calculator.js?v=3';
+import { findTeamDisplayStats } from './poisson-model.js?v=3';
 
 // UI state management
 let selectedCountryForTeams = null;
@@ -207,6 +208,10 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
             return;
         }
 
+        // Look up team table stats (position, goals per match)
+        const homeStats = selectedLeagueTable ? findTeamDisplayStats(match.homeTeam, selectedLeagueTable) : null;
+        const awayStats = selectedLeagueTable ? findTeamDisplayStats(match.awayTeam, selectedLeagueTable) : null;
+
         // Calculate odds: prefer Poisson+DC model if league table available, fallback to Elo draw-width
         let calculatedOdds = null;
         if (selectedLeagueTable) {
@@ -312,6 +317,13 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
                         ${usePoisson ? ' | <span style="color: #006600; font-weight: bold;">Poisson+DC</span>' : ''}
                         ${hasValue ? ' | <strong style="color: #006600;">VALUE OPPORTUNITY</strong>' : ''}
                     </div>
+                    ${homeStats || awayStats ? `
+                    <div style="font-size: 11px; color: #555; text-align: center; margin-top: 4px;">
+                        ${homeStats ? `<span style="font-weight: bold;">${homeStats.position ? '#' + homeStats.position : '-'}</span> <span style="color: #888;">${homeStats.homeGPM.toFixed(2)} home GPM</span>` : ''}
+                        <span style="color: #ccc; margin: 0 6px;">|</span>
+                        ${awayStats ? `<span style="color: #888;">${awayStats.awayGPM.toFixed(2)} away GPM</span> <span style="font-weight: bold;">${awayStats.position ? '#' + awayStats.position : '-'}</span>` : ''}
+                    </div>
+                    ` : ''}
                 </div>
 
                 <!-- xG Bar (Poisson model only) -->
