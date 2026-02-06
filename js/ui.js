@@ -1,4 +1,4 @@
-import { CONFIG, countries } from './config.js?v=3';
+import { CONFIG, countries } from './config.js?v=4';
 import {
     calculateOddsFromRatings,
     calculateOddsWithPoisson,
@@ -15,8 +15,8 @@ import {
     applyMarginToDNB,
     removeMarginFromDNB,
     calculateDNBFromFairOdds
-} from './odds-calculator.js?v=3';
-import { findTeamDisplayStats } from './poisson-model.js?v=3';
+} from './odds-calculator.js?v=4';
+import { findTeamDisplayStats } from './poisson-model.js?v=4';
 
 // UI state management
 let selectedCountryForTeams = null;

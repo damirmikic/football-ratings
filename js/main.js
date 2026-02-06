@@ -1,4 +1,4 @@
-import { fetchTeamData, fetchOddsData, fetchLeagueTable, clearCache, testConnection } from './api.js?v=3';
+import { fetchTeamData, fetchOddsData, fetchLeagueTable, clearCache, testConnection } from './api.js?v=4';
 import {
     createCountriesList,
     showLoading,
@@ -11,7 +11,7 @@ import {
     getSelectedLeagueUrl,
     updateMarginAdjustment,
     setLeagueTable
-} from './ui.js?v=3';
+} from './ui.js?v=4';
 
 // Data stores
 const teamsData = {};
@@ -121,7 +121,7 @@ function handleRatingsTabClick() {
         const teamData = teamsData[selectedCountry][selectedLeague];
 
         // Import showTeamsView dynamically
-        import('./ui.js?v=3').then(module => {
+        import('./ui.js?v=4').then(module => {
             module.showTeamsView(teamData);
         });
     }
@@ -132,7 +132,7 @@ async function handleOddsTabClick() {
     const leagueUrl = getSelectedLeagueUrl();
 
     if (!leagueUrl) {
-        import('./ui.js?v=3').then(module => {
+        import('./ui.js?v=4').then(module => {
             module.showOddsView(null);
         });
         return;
@@ -147,14 +147,14 @@ async function handleOddsTabClick() {
             showInfo(`Successfully loaded ${oddsData.length} odds records`);
         }
 
-        import('./ui.js?v=3').then(module => {
+        import('./ui.js?v=4').then(module => {
             module.showOddsView(oddsData);
         });
     } catch (error) {
         hideLoading();
         showError(`Failed to load odds data. ${error.message}`);
 
-        import('./ui.js?v=3').then(module => {
+        import('./ui.js?v=4').then(module => {
             module.showOddsView(null);
         });
     }
