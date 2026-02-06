@@ -156,6 +156,7 @@ export function parseLeagueTableFromHTML(htmlString) {
     }
 
     const teams = {};
+    const standings = []; // Full standings array for table display
     let leagueTotalHomeGoals = 0;
     let leagueTotalAwayGoals = 0;
     let leagueTotalHomeMatches = 0;
@@ -170,18 +171,34 @@ export function parseLeagueTableFromHTML(htmlString) {
         if (cells.length < 18) continue;
 
         try {
+            const rank = parseInt(cells[0].textContent.trim()) || i;
             const teamCell = cells[1];
             const teamLink = teamCell.querySelector('a');
             const teamName = teamLink ? teamLink.textContent.trim() : teamCell.textContent.trim();
             if (!teamName) continue;
 
-            // Home stats: cells[8]=M, cells[12]=Goals (GF:GA)
+            // Total stats: cells[2]=P, cells[3]=W, cells[4]=D, cells[5]=L, cells[6]=Goals, cells[7]=Pts
+            const totalPlayed = parseInt(cells[2].textContent.trim()) || 0;
+            const totalWins = parseInt(cells[3].textContent.trim()) || 0;
+            const totalDraws = parseInt(cells[4].textContent.trim()) || 0;
+            const totalLosses = parseInt(cells[5].textContent.trim()) || 0;
+            const totalGoals = cells[6].textContent.trim();
+            const [totalGF, totalGA] = totalGoals.split(':').map(Number);
+            const totalPoints = parseInt(cells[7].textContent.trim()) || 0;
+
+            // Home stats: cells[8]=M, cells[9]=W, cells[10]=D, cells[11]=L, cells[12]=Goals (GF:GA)
             const homeMatches = parseInt(cells[8].textContent.trim()) || 0;
+            const homeWins = parseInt(cells[9].textContent.trim()) || 0;
+            const homeDraws = parseInt(cells[10].textContent.trim()) || 0;
+            const homeLosses = parseInt(cells[11].textContent.trim()) || 0;
             const homeGoals = cells[12].textContent.trim();
             const [homeGF, homeGA] = homeGoals.split(':').map(Number);
 
-            // Away stats: cells[13]=M, cells[17]=Goals (GF:GA)
+            // Away stats: cells[13]=M, cells[14]=W, cells[15]=D, cells[16]=L, cells[17]=Goals (GF:GA)
             const awayMatches = parseInt(cells[13].textContent.trim()) || 0;
+            const awayWins = parseInt(cells[14].textContent.trim()) || 0;
+            const awayDraws = parseInt(cells[15].textContent.trim()) || 0;
+            const awayLosses = parseInt(cells[16].textContent.trim()) || 0;
             const awayGoals = cells[17].textContent.trim();
             const [awayGF, awayGA] = awayGoals.split(':').map(Number);
 
@@ -196,6 +213,16 @@ export function parseLeagueTableFromHTML(htmlString) {
                 awayGAPerMatch: awayGA / awayMatches
             };
 
+            standings.push({
+                rank, name: teamName,
+                played: totalPlayed, wins: totalWins, draws: totalDraws, losses: totalLosses,
+                goalsFor: isNaN(totalGF) ? homeGF + awayGF : totalGF,
+                goalsAgainst: isNaN(totalGA) ? homeGA + awayGA : totalGA,
+                points: totalPoints,
+                homeMatches, homeWins, homeDraws, homeLosses, homeGF, homeGA,
+                awayMatches, awayWins, awayDraws, awayLosses, awayGF, awayGA
+            });
+
             leagueTotalHomeGoals += homeGF;
             leagueTotalAwayGoals += awayGF;
             leagueTotalHomeMatches += homeMatches;
@@ -208,6 +235,9 @@ export function parseLeagueTableFromHTML(htmlString) {
     const teamCount = Object.keys(teams).length;
     if (teamCount === 0) return null;
 
+    // Sort standings by points desc, then goal difference desc
+    standings.sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
+
     const leagueAvgHomeGoals = leagueTotalHomeGoals / leagueTotalHomeMatches;
     const leagueAvgAwayGoals = leagueTotalAwayGoals / leagueTotalAwayMatches;
 
@@ -215,6 +245,7 @@ export function parseLeagueTableFromHTML(htmlString) {
 
     return {
         teams,
+        standings,
         leagueAvgHomeGoals,
         leagueAvgAwayGoals,
         leagueTotalHomeMatches,

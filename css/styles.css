@@ -346,6 +346,17 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
+#tableDisplay {
+    flex-direction: column;
+}
+
+.standings-table td,
+.standings-table th {
+    padding: 6px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
 @media (max-width: 768px) {
     .teams-content {
         flex-direction: column;
