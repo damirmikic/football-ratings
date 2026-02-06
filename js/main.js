@@ -15,6 +15,7 @@ import {
 
 // Data stores
 const teamsData = {};
+const leagueTableData = {}; // Store league tables separately
 
 // Create fetcher object for compatibility with HTML onclick handlers
 window.fetcher = {
@@ -65,6 +66,7 @@ async function handleLeagueClick(event) {
 
     // Check if we already have the data
     let teamData = teamsData[countryName] && teamsData[countryName][leagueName];
+    const tableKey = `${countryName}-${leagueCode}`;
 
     if (!teamData) {
         try {
@@ -83,6 +85,7 @@ async function handleLeagueClick(event) {
                 teamsData[countryName] = {};
             }
             teamsData[countryName][leagueName] = teamData;
+            leagueTableData[tableKey] = leagueTable;
 
             // Set league table for Poisson+DC model
             setLeagueTable(leagueTable);
@@ -95,6 +98,9 @@ async function handleLeagueClick(event) {
             showError(`Failed to load team data for ${leagueName}. ${error.message}`);
             return;
         }
+    } else {
+        // Restore league table from cache for Poisson+DC model
+        setLeagueTable(leagueTableData[tableKey] || null);
     }
 
     if (teamData && (teamData.home.length > 0 || teamData.away.length > 0)) {

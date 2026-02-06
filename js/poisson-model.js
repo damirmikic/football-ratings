@@ -159,6 +159,53 @@ function findXGSplit(totalXG, eloDNBHome, tolerance = 0.0001, maxIterations = 50
 }
 
 /**
+ * Normalize a team name for fuzzy comparison
+ * Strips common suffixes, lowercases, and removes extra whitespace
+ */
+function normalizeTeamName(name) {
+    return name
+        .toLowerCase()
+        .replace(/\s+fc$/i, '')
+        .replace(/^fc\s+/i, '')
+        .replace(/\s+afc$/i, '')
+        .replace(/\s+sc$/i, '')
+        .replace(/\s+cf$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
+ * Find a team in the league table using fuzzy name matching
+ * Tries: exact match, normalized match, substring match
+ *
+ * @param {string} teamName - Team name from odds/ratings
+ * @param {Object} teams - League table teams object
+ * @returns {Object|null} - Team data or null
+ */
+function findTeamInTable(teamName, teams) {
+    // 1. Exact match
+    if (teams[teamName]) return teams[teamName];
+
+    // 2. Normalized match
+    const normalizedInput = normalizeTeamName(teamName);
+    for (const [tableName, data] of Object.entries(teams)) {
+        if (normalizeTeamName(tableName) === normalizedInput) return data;
+    }
+
+    // 3. One contains the other (handles "Leeds United" vs "Leeds Utd" etc.)
+    for (const [tableName, data] of Object.entries(teams)) {
+        const normalizedTable = normalizeTeamName(tableName);
+        // Check if either name starts with the same significant prefix (at least 4 chars)
+        const shorter = normalizedInput.length <= normalizedTable.length ? normalizedInput : normalizedTable;
+        const longer = normalizedInput.length > normalizedTable.length ? normalizedInput : normalizedTable;
+        if (shorter.length >= 4 && longer.startsWith(shorter)) return data;
+        if (shorter.length >= 4 && longer.includes(shorter)) return data;
+    }
+
+    return null;
+}
+
+/**
  * Calculate match-specific total xG from league table data
  * totalXG = homeTeam's home GF/match + awayTeam's away GF/match
  *
@@ -170,10 +217,13 @@ function findXGSplit(totalXG, eloDNBHome, tolerance = 0.0001, maxIterations = 50
 export function calculateMatchTotalXG(homeTeam, awayTeam, leagueTable) {
     if (!leagueTable || !leagueTable.teams) return null;
 
-    const homeData = leagueTable.teams[homeTeam];
-    const awayData = leagueTable.teams[awayTeam];
+    const homeData = findTeamInTable(homeTeam, leagueTable.teams);
+    const awayData = findTeamInTable(awayTeam, leagueTable.teams);
 
-    if (!homeData || !awayData) return null;
+    if (!homeData || !awayData) {
+        console.warn(`Team not found in league table: ${!homeData ? homeTeam : ''} ${!awayData ? awayTeam : ''}`);
+        return null;
+    }
 
     return homeData.homeGFPerMatch + awayData.awayGFPerMatch;
 }
