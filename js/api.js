@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js';
-import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML } from './parsers.js';
+import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, parseLeagueTableFromHTML } from './parsers.js';
 
 // Data caching
-const dataCache = { leagues: {}, teams: {}, odds: {}, timestamps: {} };
+const dataCache = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, timestamps: {} };
 
 // Utility functions
 export function buildURL(endpoint) {
@@ -292,11 +292,46 @@ export async function fetchOddsData(leagueUrl) {
     }
 }
 
+// Fetch league table data for a league (goal stats for xG calculation)
+export async function fetchLeagueTable(countryName, leagueCode) {
+    const cacheKey = `table-${countryName}-${leagueCode}`;
+
+    const cachedData = getCacheData(cacheKey, 'leagueTable');
+    if (cachedData) {
+        console.log('Using cached league table for', cacheKey);
+        return cachedData;
+    }
+
+    try {
+        const url = buildURL(`/${countryName}/${leagueCode}/`);
+        console.log('Fetching league table from:', url);
+        const response = await fetchWithRetry(url, 2);
+
+        if (response.ok) {
+            const html = await response.text();
+            const tableData = parseLeagueTableFromHTML(html);
+
+            if (tableData) {
+                setCacheData(cacheKey, tableData, 'leagueTable');
+                console.log(`League table loaded: ${Object.keys(tableData.teams).length} teams`);
+                return tableData;
+            }
+        }
+
+        console.warn('No league table data found');
+        return null;
+    } catch (error) {
+        console.warn('Error fetching league table:', error.message);
+        return null;
+    }
+}
+
 // Clear all cached data
 export function clearCache() {
     Object.keys(dataCache.leagues).forEach(key => delete dataCache.leagues[key]);
     Object.keys(dataCache.teams).forEach(key => delete dataCache.teams[key]);
     Object.keys(dataCache.odds).forEach(key => delete dataCache.odds[key]);
+    Object.keys(dataCache.leagueTable).forEach(key => delete dataCache.leagueTable[key]);
     Object.keys(dataCache.timestamps).forEach(key => delete dataCache.timestamps[key]);
 
     console.log('Cache cleared');
