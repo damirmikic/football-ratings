@@ -521,6 +521,7 @@ export function showTeamsView(teamData) {
     document.getElementById('ratingsTab').classList.add('active');
     document.getElementById('teamsContent').style.display = 'flex';
     document.getElementById('oddsDisplay').style.display = 'none';
+    document.getElementById('tableDisplay').style.display = 'none';
 
     const teamsContent = document.getElementById('teamsContent');
 
@@ -536,107 +537,143 @@ export function showTeamsView(teamData) {
     `;
 }
 
-// Show about view
-export function showAboutView() {
+// Create league standings table HTML
+function createStandingsTable(standings) {
+    if (!standings || standings.length === 0) {
+        return '<div style="padding: 20px; text-align: center; color: #666;">No standings data available</div>';
+    }
+
+    return `
+        <table class="teams-table standings-table">
+            <thead>
+                <tr>
+                    <th style="text-align: center; width: 35px;">#</th>
+                    <th>Team</th>
+                    <th style="text-align: center;">P</th>
+                    <th style="text-align: center;">W</th>
+                    <th style="text-align: center;">D</th>
+                    <th style="text-align: center;">L</th>
+                    <th style="text-align: center;">GF</th>
+                    <th style="text-align: center;">GA</th>
+                    <th style="text-align: center;">GD</th>
+                    <th style="text-align: center; font-weight: bold;">Pts</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${standings.map((team, index) => {
+                    const gd = team.goalsFor - team.goalsAgainst;
+                    const gdDisplay = gd > 0 ? `+${gd}` : gd;
+                    const gdColor = gd > 0 ? '#006600' : gd < 0 ? '#cc0000' : '#666';
+                    return `
+                    <tr>
+                        <td style="text-align: center; font-weight: bold; color: #666;">${index + 1}</td>
+                        <td style="color: #006600; font-weight: bold;">${team.name}</td>
+                        <td style="text-align: center;">${team.played}</td>
+                        <td style="text-align: center;">${team.wins}</td>
+                        <td style="text-align: center;">${team.draws}</td>
+                        <td style="text-align: center;">${team.losses}</td>
+                        <td style="text-align: center;">${team.goalsFor}</td>
+                        <td style="text-align: center;">${team.goalsAgainst}</td>
+                        <td style="text-align: center; color: ${gdColor}; font-weight: bold;">${gdDisplay}</td>
+                        <td style="text-align: center; font-weight: bold; color: #333;">${team.points}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// Create home/away breakdown table
+function createHomeAwayTable(standings, type) {
+    if (!standings || standings.length === 0) return '';
+
+    const isHome = type === 'home';
+    const label = isHome ? 'Home' : 'Away';
+
+    // Sort by home/away points approximation (W*3 + D*1)
+    const sorted = [...standings].sort((a, b) => {
+        const aPts = (isHome ? a.homeWins : a.awayWins) * 3 + (isHome ? a.homeDraws : a.awayDraws);
+        const bPts = (isHome ? b.homeWins : b.awayWins) * 3 + (isHome ? b.homeDraws : b.awayDraws);
+        const aGD = (isHome ? a.homeGF - a.homeGA : a.awayGF - a.awayGA);
+        const bGD = (isHome ? b.homeGF - b.homeGA : b.awayGF - b.awayGA);
+        return bPts - aPts || bGD - aGD;
+    });
+
+    return `
+        <table class="teams-table standings-table">
+            <thead>
+                <tr>
+                    <th style="text-align: center; width: 35px;">#</th>
+                    <th>Team</th>
+                    <th style="text-align: center;">P</th>
+                    <th style="text-align: center;">W</th>
+                    <th style="text-align: center;">D</th>
+                    <th style="text-align: center;">L</th>
+                    <th style="text-align: center;">GF</th>
+                    <th style="text-align: center;">GA</th>
+                    <th style="text-align: center;">GD</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sorted.map((team, index) => {
+                    const m = isHome ? team.homeMatches : team.awayMatches;
+                    const w = isHome ? team.homeWins : team.awayWins;
+                    const d = isHome ? team.homeDraws : team.awayDraws;
+                    const l = isHome ? team.homeLosses : team.awayLosses;
+                    const gf = isHome ? team.homeGF : team.awayGF;
+                    const ga = isHome ? team.homeGA : team.awayGA;
+                    const gd = gf - ga;
+                    const gdDisplay = gd > 0 ? `+${gd}` : gd;
+                    const gdColor = gd > 0 ? '#006600' : gd < 0 ? '#cc0000' : '#666';
+                    return `
+                    <tr>
+                        <td style="text-align: center; font-weight: bold; color: #666;">${index + 1}</td>
+                        <td style="color: #006600; font-weight: bold;">${team.name}</td>
+                        <td style="text-align: center;">${m}</td>
+                        <td style="text-align: center;">${w}</td>
+                        <td style="text-align: center;">${d}</td>
+                        <td style="text-align: center;">${l}</td>
+                        <td style="text-align: center;">${gf}</td>
+                        <td style="text-align: center;">${ga}</td>
+                        <td style="text-align: center; color: ${gdColor}; font-weight: bold;">${gdDisplay}</td>
+                    </tr>`;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+// Show table (standings) view
+export function showTableView() {
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById('aboutTab').classList.add('active');
+    document.getElementById('tableTab').classList.add('active');
     document.getElementById('teamsContent').style.display = 'none';
     document.getElementById('oddsDisplay').style.display = 'none';
-    document.getElementById('aboutDisplay').style.display = 'block';
+    document.getElementById('tableDisplay').style.display = 'block';
 
-    const aboutDisplay = document.getElementById('aboutDisplay');
+    const tableDisplay = document.getElementById('tableDisplay');
 
-    aboutDisplay.innerHTML = `
-        <div style="max-width: 900px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #006600; margin-bottom: 20px; text-align: center;">About Global Football League Rankings</h2>
+    if (!selectedLeagueTable || !selectedLeagueTable.standings || selectedLeagueTable.standings.length === 0) {
+        tableDisplay.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No league table data available for this league.</div>';
+        return;
+    }
 
-            <div style="background-color: #f0f8f0; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #006600;">
-                <h3 style="color: #006600; margin-bottom: 10px;">What is this application?</h3>
-                <p style="line-height: 1.6; color: #333;">
-                    This is a comprehensive football (soccer) analytics platform that provides team ratings, league rankings,
-                    and betting odds analysis for over 90 countries and 200+ leagues worldwide. The application calculates
-                    fair betting odds from team ratings and identifies value betting opportunities using advanced statistical models.
-                </p>
-            </div>
+    const standings = selectedLeagueTable.standings;
 
-            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
-                <h3 style="color: #006600; margin-bottom: 15px;">Key Features</h3>
-                <ul style="line-height: 2; color: #333;">
-                    <li><strong>Global Coverage:</strong> UEFA, CONMEBOL, CONCACAF, AFC, CAF, OFC confederations</li>
-                    <li><strong>Team Ratings:</strong> Home and away performance ratings for all teams</li>
-                    <li><strong>Odds Calculator:</strong> Elo-based probability calculations with draw modeling</li>
-                    <li><strong>Value Betting:</strong> Expected Value (EV) analysis and value bet detection</li>
-                    <li><strong>Margin Analysis:</strong> Bookmaker margin calculation and adjustment options</li>
-                    <li><strong>Smart Caching:</strong> 1-hour cache duration for optimal performance</li>
-                    <li><strong>CORS Handling:</strong> Multiple proxy fallback options for data fetching</li>
-                </ul>
-            </div>
+    tableDisplay.innerHTML = `
+        <div style="width: 100%;">
+            <div class="table-title">League Standings (${standings.length} teams)</div>
+            ${createStandingsTable(standings)}
 
-            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
-                <h3 style="color: #006600; margin-bottom: 15px;">How Odds Calculation Works</h3>
-                <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
-                    The application uses a <strong>Poisson + Dixon-Coles</strong> hybrid model that combines Elo ratings with league table data:
-                </p>
-                <div style="background-color: #f9f9f9; padding: 15px; border-radius: 4px; font-family: monospace; margin-bottom: 10px; font-size: 13px;">
-                    1. Elo ratings &rarr; DNB (winner) probabilities<br>
-                    2. League table &rarr; match-specific total xG<br>
-                    3. Binary search &rarr; distribute xG to match DNB<br>
-                    4. Poisson scoreline matrix + Dixon-Coles &rarr; 1X2<br>
-                    <span style="color: #666; font-size: 11px;">*Falls back to Elo draw-width model when league table is unavailable</span>
+            <div style="display: flex; gap: 20px; margin-top: 20px;">
+                <div style="flex: 1;">
+                    <div class="table-title">Home Form</div>
+                    ${createHomeAwayTable(standings, 'home')}
                 </div>
-                <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
-                    Key Features:
-                </p>
-                <ul style="line-height: 1.8; color: #333;">
-                    <li><strong>xG from Table:</strong> Match-specific expected goals derived from home/away scoring stats</li>
-                    <li><strong>Dixon-Coles:</strong> Corrects Poisson for low-scoring outcomes where draws cluster</li>
-                    <li><strong>Expected Value:</strong> Calculated as (Market Odds / Fair Odds - 1) x 100%</li>
-                </ul>
-            </div>
-
-            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
-                <h3 style="color: #006600; margin-bottom: 15px;">Technology Stack</h3>
-                <ul style="line-height: 1.8; color: #333;">
-                    <li><strong>Frontend:</strong> Vanilla JavaScript (ES6 Modules)</li>
-                    <li><strong>Architecture:</strong> Modular design with separation of concerns</li>
-                    <li><strong>Modules:</strong> config.js, parsers.js, api.js, odds-calculator.js, ui.js, main.js</li>
-                    <li><strong>Styling:</strong> Pure CSS with responsive design</li>
-                    <li><strong>Data Fetching:</strong> Fetch API with CORS proxy support</li>
-                </ul>
-            </div>
-
-            <div style="background-color: #fff9e6; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f0ad4e;">
-                <h3 style="color: #8a6d3b; margin-bottom: 10px;">Disclaimer</h3>
-                <p style="line-height: 1.6; color: #8a6d3b; font-size: 14px;">
-                    <strong>Educational and Portfolio Purpose:</strong> This application is designed as a technical demonstration
-                    and portfolio project. Data is aggregated from public sources for analysis and educational purposes only.
-                    This tool is not affiliated with any bookmakers or data providers. Calculated odds and value indicators
-                    are statistical models and should not be used as the sole basis for betting decisions.
-                    <strong>Gambling involves risk. Please bet responsibly.</strong>
-                </p>
-            </div>
-
-            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd;">
-                <h3 style="color: #006600; margin-bottom: 15px;">Source Code & Development</h3>
-                <p style="line-height: 1.6; color: #333; margin-bottom: 10px;">
-                    This is an open-source project. The complete source code is available on GitHub:
-                </p>
-                <div style="text-align: center; margin: 15px 0;">
-                    <a href="https://github.com/damirmikic/football-ratings"
-                       target="_blank"
-                       style="display: inline-block; padding: 12px 24px; background-color: #006600; color: white;
-                              text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        View on GitHub
-                    </a>
+                <div style="flex: 1;">
+                    <div class="table-title">Away Form</div>
+                    ${createHomeAwayTable(standings, 'away')}
                 </div>
-                <p style="line-height: 1.6; color: #333; font-size: 14px;">
-                    Contributions, issues, and feature requests are welcome!
-                </p>
-            </div>
-
-            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; font-size: 12px; color: #666;">
-                <p>Built with JavaScript ES6 Modules • Responsive Design • Global Coverage</p>
-                <p style="margin-top: 5px;">Co-Authored-By: Claude Sonnet 4.5</p>
             </div>
         </div>
     `;
@@ -648,6 +685,7 @@ export function showOddsView(oddsData) {
     document.getElementById('oddsTab').classList.add('active');
     document.getElementById('teamsContent').style.display = 'none';
     document.getElementById('oddsDisplay').style.display = 'block';
+    document.getElementById('tableDisplay').style.display = 'none';
 
     const oddsDisplay = document.getElementById('oddsDisplay');
 

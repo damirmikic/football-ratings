@@ -7,7 +7,7 @@ import {
     showInfo,
     showTeamsDisplay,
     showOddsView,
-    showAboutView,
+    showTableView,
     getSelectedLeagueUrl,
     updateMarginAdjustment,
     setLeagueTable
@@ -184,7 +184,7 @@ function init() {
     // Attach navigation tab handlers
     const ratingsTab = document.getElementById('ratingsTab');
     const oddsTab = document.getElementById('oddsTab');
-    const aboutTab = document.getElementById('aboutTab');
+    const tableTab = document.getElementById('tableTab');
 
     if (ratingsTab) {
         ratingsTab.addEventListener('click', handleRatingsTabClick);
@@ -194,8 +194,8 @@ function init() {
         oddsTab.addEventListener('click', handleOddsTabClick);
     }
 
-    if (aboutTab) {
-        aboutTab.addEventListener('click', showAboutView);
+    if (tableTab) {
+        tableTab.addEventListener('click', showTableView);
     }
 
     // Auto-test connection on load
