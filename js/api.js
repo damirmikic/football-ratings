@@ -1,5 +1,5 @@
-import { CONFIG } from './config.js?v=2';
-import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, parseLeagueTableFromHTML } from './parsers.js?v=2';
+import { CONFIG } from './config.js?v=3';
+import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, parseLeagueTableFromHTML } from './parsers.js?v=3';
 
 // Data caching
 const dataCache = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, timestamps: {} };

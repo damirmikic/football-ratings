@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js?v=2';
+import { CONFIG } from './config.js?v=3';
 
 // Enhanced HTML parser for team data
 export function parseTeamDataFromHTML(htmlString, ratingType = 'home') {
