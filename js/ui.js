@@ -213,7 +213,7 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
             calculatedOdds = calculateOddsWithPoisson(homeRating, awayRating, match.homeTeam, match.awayTeam, selectedLeagueTable);
         }
         if (!calculatedOdds) {
-            calculatedOdds = calculateOddsFromRatings(homeRating, awayRating, leagueCode);
+            calculatedOdds = calculateOddsFromRatings(homeRating, awayRating);
         }
 
         // Calculate bookmaker margin
