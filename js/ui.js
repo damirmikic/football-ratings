@@ -269,19 +269,53 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
         const hasValue = valueBets.length > 0;
         if (hasValue) valueBetsCount++;
 
+        // Build xG bar section if Poisson model was used
+        const usePoisson = calculatedOdds.model === 'poisson-dc';
+        let xgSection = '';
+        if (usePoisson) {
+            const hxg = calculatedOdds.homeXG;
+            const axg = calculatedOdds.awayXG;
+            const txg = calculatedOdds.totalXG;
+            const homePercent = (hxg / txg * 100).toFixed(0);
+            const awayPercent = (axg / txg * 100).toFixed(0);
+
+            xgSection = `
+                <div style="padding: 12px 15px; background-color: #fafafa; border-bottom: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div style="font-size: 13px; font-weight: bold; color: #333;">
+                            ${hxg.toFixed(2)} <span style="font-size: 11px; font-weight: normal; color: #999;">xG</span>
+                        </div>
+                        <div style="font-size: 11px; font-weight: bold; color: #666;">
+                            Expected Goals <span style="color: #999;">(${txg.toFixed(2)} total)</span>
+                        </div>
+                        <div style="font-size: 13px; font-weight: bold; color: #333;">
+                            <span style="font-size: 11px; font-weight: normal; color: #999;">xG</span> ${axg.toFixed(2)}
+                        </div>
+                    </div>
+                    <div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; background-color: #e0e0e0;">
+                        <div style="width: ${homePercent}%; background-color: #006600; border-radius: 4px 0 0 4px;"></div>
+                        <div style="width: ${awayPercent}%; background-color: #cc0000; border-radius: 0 4px 4px 0;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
         matchCards += `
             <div style="margin-bottom: 20px; border: 2px solid ${hasValue ? '#006600' : '#ddd'}; border-radius: 8px; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                 <!-- Match Header -->
-                <div style="padding: 15px; background-color: ${hasValue ? '#e8f5e8' : '#f5f5f5'}; border-bottom: 2px solid ${hasValue ? '#006600' : '#ddd'}; border-radius: 6px 6px 0 0;">
+                <div style="padding: 15px; background-color: ${hasValue ? '#e8f5e8' : '#f5f5f5'}; border-bottom: ${usePoisson ? '1px solid #eee' : `2px solid ${hasValue ? '#006600' : '#ddd'}`}; border-radius: 6px 6px 0 0;">
                     <div style="font-size: 16px; font-weight: bold; color: #006600; text-align: center;">
                         ${match.homeTeam} vs ${match.awayTeam}
                     </div>
                     <div style="font-size: 11px; color: #666; text-align: center; margin-top: 5px;">
                         Bookmaker Margin: ${formatMargin(bookmakerMargin)} | Ratings: ${homeRating.toFixed(1)} vs ${awayRating.toFixed(1)}
-                        ${calculatedOdds.model === 'poisson-dc' ? ` | xG: ${calculatedOdds.homeXG.toFixed(2)} - ${calculatedOdds.awayXG.toFixed(2)} (${calculatedOdds.totalXG.toFixed(2)})` : ''}
+                        ${usePoisson ? ' | <span style="color: #006600; font-weight: bold;">Poisson+DC</span>' : ''}
                         ${hasValue ? ' | <strong style="color: #006600;">VALUE OPPORTUNITY</strong>' : ''}
                     </div>
                 </div>
+
+                <!-- xG Bar (Poisson model only) -->
+                ${xgSection}
 
                 <!-- Odds Grid -->
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;">
@@ -452,10 +486,12 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
             <div style="font-weight: bold; margin-bottom: 10px;">How to Read:</div>
             <div style="font-size: 12px; line-height: 1.6;">
                 <strong>Market:</strong> Bookmaker odds (includes margin)<br>
-                <strong>Fair:</strong> Calculated odds from team ratings<br>
+                <strong>Fair:</strong> Calculated odds from Poisson+Dixon-Coles model (or Elo fallback)<br>
                 <strong>EV (Expected Value):</strong> Percentage difference - positive EV suggests potential value<br>
                 <strong>Green background:</strong> Indicates value bet (EV > 5%)<br>
-                <strong>Probability:</strong> Win probability based on ratings<br>
+                <strong>Probability:</strong> Win probability based on model<br>
+                <strong>xG Bar:</strong> Expected goals per team - derived from league table stats, split using Elo DNB probabilities<br>
+                <strong>Poisson+DC:</strong> Model badge shown when Poisson + Dixon-Coles is active (league table available)<br>
                 <strong>DNB (Draw No Bet):</strong> Bet refunded if match is a draw - calculated by redistributing draw probability between home/away
             </div>
         </div>
