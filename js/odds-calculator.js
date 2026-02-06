@@ -4,7 +4,7 @@
  * Fallback: Elo draw-width model with fixed draw width
  */
 
-import { calculatePoissonProbabilities, calculateMatchTotalXG } from './poisson-model.js?v=2';
+import { calculatePoissonProbabilities, calculateMatchTotalXG } from './poisson-model.js?v=3';
 
 // Fixed draw width for Elo fallback (used when league table is unavailable)
 const FALLBACK_DRAW_WIDTH = 100;
