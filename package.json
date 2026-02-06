@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "description": "Football ratings and odds analysis system",
   "type": "module",
-  "scripts": {
-    "calibrate": "node scripts/calibrate-draw-width.js",
-    "calibrate-quick": "node scripts/calibrate-draw-width.js --quick"
-  },
+  "scripts": {},
   "keywords": ["football", "elo", "ratings", "odds", "betting"],
   "author": "",
   "license": "MIT"

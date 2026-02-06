@@ -1,22 +1,22 @@
 /**
  * Odds Calculator - Converts team ratings to betting odds
- * Uses Elo-based probability calculation with draw adjustment for football
+ * Primary model: Poisson + Dixon-Coles (when league table available)
+ * Fallback: Elo draw-width model with fixed draw width
  */
 
-import { getDrawWidth } from './draw-width-config.js';
 import { calculatePoissonProbabilities, calculateMatchTotalXG } from './poisson-model.js';
 
+// Fixed draw width for Elo fallback (used when league table is unavailable)
+const FALLBACK_DRAW_WIDTH = 100;
+
 /**
- * Calculate match outcome probabilities including draw
- * Uses an Elo-based model with Home Field Advantage (HFA) and a draw width parameter
+ * Calculate match outcome probabilities including draw (Elo fallback)
  * @param {number} homeRating - Home team rating
  * @param {number} awayRating - Away team rating
- * @param {string} [leagueCode] - Optional league code for league-specific draw width
  * @returns {Object} - Probabilities for home win, draw, away win
  */
-export function calculateMatchProbabilities(homeRating, awayRating, leagueCode = null) {
-    // Get calibrated draw width for the league (or use global default)
-    const drawWidth = getDrawWidth(leagueCode);
+export function calculateMatchProbabilities(homeRating, awayRating) {
+    const drawWidth = FALLBACK_DRAW_WIDTH;
 
     const diff = homeRating - awayRating;
 
@@ -57,14 +57,13 @@ function probabilityToOdds(probability) {
 }
 
 /**
- * Calculate fair odds from team ratings
+ * Calculate fair odds from team ratings (Elo fallback)
  * @param {number} homeRating - Home team rating
  * @param {number} awayRating - Away team rating
- * @param {string} [leagueCode] - Optional league code for league-specific draw width
  * @returns {Object} - Calculated odds for home win, draw, away win
  */
-export function calculateOddsFromRatings(homeRating, awayRating, leagueCode = null) {
-    const probabilities = calculateMatchProbabilities(homeRating, awayRating, leagueCode);
+export function calculateOddsFromRatings(homeRating, awayRating) {
+    const probabilities = calculateMatchProbabilities(homeRating, awayRating);
     
     // Calculate DNB probabilities (redistribute draw probability)
     const dnbHomeProb = probabilities.home / (probabilities.home + probabilities.away);
