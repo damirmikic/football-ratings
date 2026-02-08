@@ -76,11 +76,26 @@ class handler(BaseHTTPRequestHandler):
                 'url': full_url
             })
 
+        except requests.ConnectionError as e:
+            self._send_json(502, {
+                'success': False,
+                'error': f'Could not connect to upstream source',
+                'url': full_url if 'full_url' in locals() else 'unknown',
+                'retryable': False
+            })
+        except requests.Timeout as e:
+            self._send_json(504, {
+                'success': False,
+                'error': 'Request to upstream source timed out',
+                'url': full_url if 'full_url' in locals() else 'unknown',
+                'retryable': True
+            })
         except requests.RequestException as e:
             self._send_json(500, {
                 'success': False,
                 'error': str(e),
-                'url': full_url if 'full_url' in locals() else 'unknown'
+                'url': full_url if 'full_url' in locals() else 'unknown',
+                'retryable': False
             })
         except Exception as e:
             self._send_json(500, {
