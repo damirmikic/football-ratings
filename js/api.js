@@ -136,7 +136,18 @@ export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES, sourc
                     }
                 }
 
-                // If response not OK, retry
+                // If response not OK, check if error is retryable
+                if (!response.ok) {
+                    let errorData = {};
+                    try { errorData = await response.json(); } catch (_) {}
+                    // Don't retry on non-retryable errors (e.g. upstream connection failures)
+                    if (errorData.retryable === false) {
+                        console.warn(`Backend API ${endpoint}: ${errorData.error || response.statusText} (not retryable)`);
+                        break;
+                    }
+                }
+
+                // Retry on retryable errors
                 if (attempt < maxRetries - 1) {
                     await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
                 }

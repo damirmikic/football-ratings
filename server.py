@@ -114,11 +114,28 @@ def api_fetch():
             'data': html_content,
             'url': full_url
         })
+    except requests.ConnectionError as e:
+        logger.warning(f"Connection error for {full_url}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Could not connect to {source} source',
+            'url': full_url,
+            'retryable': False
+        }), 502
+    except requests.Timeout as e:
+        logger.warning(f"Timeout for {full_url}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Request to {source} source timed out',
+            'url': full_url,
+            'retryable': True
+        }), 504
     except requests.RequestException as e:
         return jsonify({
             'success': False,
             'error': str(e),
-            'url': full_url
+            'url': full_url,
+            'retryable': False
         }), 500
 
 
