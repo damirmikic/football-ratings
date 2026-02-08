@@ -1,4 +1,4 @@
-import { fetchTeamData, fetchOddsData, fetchLeagueTable, clearCache, testConnection, fetchSoccerstatsData } from './api.js?v=5';
+import { fetchTeamData, fetchOddsData, fetchLeagueTable, clearCache, testConnection, fetchSoccerstatsData, fetchSoccerstatsLeagueTable } from './api.js?v=5';
 import {
     createCountriesList,
     showLoading,
@@ -75,14 +75,18 @@ async function handleLeagueClick(event) {
         try {
             showLoading(`Loading ${leagueName} team data...`);
 
-            // Fetch team ratings, league table, and soccerstats in parallel
-            const [fetchedTeamData, leagueTable, ssData] = await Promise.all([
+            // Fetch team ratings, soccerstats league table, soccer-rating league table, and soccerstats stats in parallel
+            const [fetchedTeamData, ssLeagueTable, srLeagueTable, ssData] = await Promise.all([
                 fetchTeamData(countryName, leagueName, leagueCode),
+                fetchSoccerstatsLeagueTable(leagueCode),
                 fetchLeagueTable(countryName, leagueCode),
                 fetchSoccerstatsData(leagueCode)
             ]);
 
             teamData = fetchedTeamData;
+
+            // Prefer soccerstats league table, fall back to soccer-rating
+            const leagueTable = ssLeagueTable || srLeagueTable;
 
             // Store the data
             if (!teamsData[countryName]) {
@@ -98,8 +102,9 @@ async function handleLeagueClick(event) {
             setSoccerstatsData(ssData);
 
             hideLoading();
-            const tableInfo = leagueTable ? ` + league table (${Object.keys(leagueTable.teams).length} teams)` : '';
-            const ssInfo = ssData ? ' + soccerstats' : '';
+            const source = ssLeagueTable ? 'soccerstats' : (srLeagueTable ? 'soccer-rating' : 'none');
+            const tableInfo = leagueTable ? ` + league table [${source}] (${Object.keys(leagueTable.teams).length} teams)` : '';
+            const ssInfo = ssData ? ' + stats' : '';
             showInfo(`Successfully loaded ${teamData.home.length + teamData.away.length} team records for ${leagueName}${tableInfo}${ssInfo}`);
         } catch (error) {
             hideLoading();
