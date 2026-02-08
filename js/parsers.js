@@ -253,6 +253,151 @@ export function parseLeagueTableFromHTML(htmlString) {
     };
 }
 
+// Parse soccerstats.com individual league page (home + away btable tables)
+// Returns same structure as parseLeagueTableFromHTML for compatibility with Poisson/DC model
+export function parseSoccerstatsLeagueTableFromHTML(htmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+
+    // Soccerstats uses multiple tables with id="btable"
+    // First btable = Home table, Second btable = Away table
+    const btables = doc.querySelectorAll('table#btable');
+    if (btables.length < 2) {
+        console.warn('Could not find home+away btables on soccerstats page');
+        return null;
+    }
+
+    const homeTable = btables[0];
+    const awayTable = btables[1];
+
+    // Parse a btable into a map of teamName -> { gp, w, d, l, gf, ga, gd, pts, ppg }
+    function parseBTable(table) {
+        const teamMap = {};
+        const rows = table.querySelectorAll('tr');
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].querySelectorAll('td');
+            if (cells.length < 10) continue;
+            try {
+                const rank = parseInt(cells[0].textContent.trim()) || i;
+                const teamLink = cells[1].querySelector('a');
+                const teamName = teamLink ? teamLink.textContent.trim() : cells[1].textContent.trim();
+                if (!teamName) continue;
+
+                const gp = parseInt(cells[2].textContent.trim()) || 0;
+                const w = parseInt(cells[3].textContent.trim()) || 0;
+                const d = parseInt(cells[4].textContent.trim()) || 0;
+                const l = parseInt(cells[5].textContent.trim()) || 0;
+                const gf = parseInt(cells[6].textContent.trim()) || 0;
+                const ga = parseInt(cells[7].textContent.trim()) || 0;
+                const gd = parseInt(cells[8].textContent.trim()) || 0;
+                const pts = parseInt(cells[9].textContent.trim()) || 0;
+                const ppg = cells.length > 10 ? (parseFloat(cells[10].textContent.trim()) || 0) : 0;
+
+                teamMap[teamName] = { rank, gp, w, d, l, gf, ga, gd, pts, ppg };
+            } catch (e) {
+                console.warn('Error parsing soccerstats btable row:', e);
+            }
+        }
+        return teamMap;
+    }
+
+    const homeData = parseBTable(homeTable);
+    const awayData = parseBTable(awayTable);
+
+    if (Object.keys(homeData).length === 0 || Object.keys(awayData).length === 0) {
+        console.warn('Empty home or away data from soccerstats btables');
+        return null;
+    }
+
+    // Combine into the same format as parseLeagueTableFromHTML
+    const teams = {};
+    const standings = [];
+    let leagueTotalHomeGoals = 0;
+    let leagueTotalAwayGoals = 0;
+    let leagueTotalHomeMatches = 0;
+    let leagueTotalAwayMatches = 0;
+
+    // Get all unique team names from both tables
+    const allTeamNames = new Set([...Object.keys(homeData), ...Object.keys(awayData)]);
+
+    for (const teamName of allTeamNames) {
+        const home = homeData[teamName];
+        const away = awayData[teamName];
+        if (!home || !away) continue;
+
+        const homeMatches = home.gp;
+        const homeWins = home.w;
+        const homeDraws = home.d;
+        const homeLosses = home.l;
+        const homeGF = home.gf;
+        const homeGA = home.ga;
+
+        const awayMatches = away.gp;
+        const awayWins = away.w;
+        const awayDraws = away.d;
+        const awayLosses = away.l;
+        const awayGF = away.gf;
+        const awayGA = away.ga;
+
+        if (homeMatches === 0 || awayMatches === 0) continue;
+
+        teams[teamName] = {
+            homeMatches, homeGF, homeGA,
+            awayMatches, awayGF, awayGA,
+            homeGFPerMatch: homeGF / homeMatches,
+            homeGAPerMatch: homeGA / homeMatches,
+            awayGFPerMatch: awayGF / awayMatches,
+            awayGAPerMatch: awayGA / awayMatches
+        };
+
+        const totalPlayed = homeMatches + awayMatches;
+        const totalGF = homeGF + awayGF;
+        const totalGA = homeGA + awayGA;
+        const totalPoints = home.pts + away.pts;
+
+        standings.push({
+            rank: 0, // will be recalculated after sorting
+            name: teamName,
+            played: totalPlayed,
+            wins: homeWins + awayWins,
+            draws: homeDraws + awayDraws,
+            losses: homeLosses + awayLosses,
+            goalsFor: totalGF,
+            goalsAgainst: totalGA,
+            points: totalPoints,
+            homeMatches, homeWins, homeDraws, homeLosses, homeGF, homeGA,
+            awayMatches, awayWins, awayDraws, awayLosses, awayGF, awayGA
+        });
+
+        leagueTotalHomeGoals += homeGF;
+        leagueTotalAwayGoals += awayGF;
+        leagueTotalHomeMatches += homeMatches;
+        leagueTotalAwayMatches += awayMatches;
+    }
+
+    const teamCount = Object.keys(teams).length;
+    if (teamCount === 0) return null;
+
+    // Sort standings by points desc, then goal difference desc
+    standings.sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
+    standings.forEach((s, i) => s.rank = i + 1);
+
+    const leagueAvgHomeGoals = leagueTotalHomeGoals / leagueTotalHomeMatches;
+    const leagueAvgAwayGoals = leagueTotalAwayGoals / leagueTotalAwayMatches;
+
+    console.log(`Parsed soccerstats league table: ${teamCount} teams, avg home goals: ${leagueAvgHomeGoals.toFixed(2)}, avg away goals: ${leagueAvgAwayGoals.toFixed(2)}`);
+
+    return {
+        teams,
+        standings,
+        leagueAvgHomeGoals,
+        leagueAvgAwayGoals,
+        leagueTotalHomeMatches,
+        leagueTotalAwayMatches,
+        source: 'soccerstats'
+    };
+}
+
 // Parse soccerstats.com league statistics table
 // Returns a map of soccerstats league ID -> stats object
 export function parseSoccerstatsFromHTML(htmlString) {

@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js?v=5';
-import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, parseLeagueTableFromHTML, parseSoccerstatsFromHTML } from './parsers.js?v=5';
+import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, parseLeagueTableFromHTML, parseSoccerstatsFromHTML, parseSoccerstatsLeagueTableFromHTML } from './parsers.js?v=5';
 
 // Data caching
 const dataCache = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, soccerstats: {}, timestamps: {} };
@@ -384,6 +384,49 @@ export async function fetchLeagueTable(countryName, leagueCode) {
         return null;
     } catch (error) {
         console.warn('Error fetching league table:', error.message);
+        return null;
+    }
+}
+
+// Fetch soccerstats league table (home+away tables) for a specific league
+// Returns same format as fetchLeagueTable for Poisson/DC model compatibility
+export async function fetchSoccerstatsLeagueTable(leagueCode) {
+    const cacheKey = `ss-table-${leagueCode}`;
+
+    const cachedData = getCacheData(cacheKey, 'leagueTable');
+    if (cachedData) {
+        console.log('Using cached soccerstats league table for', cacheKey);
+        return cachedData;
+    }
+
+    try {
+        // Look up the soccerstats league identifier from the soccer-rating code
+        const reverseMap = CONFIG.ENDPOINTS.soccerstatsReverseMapping;
+        const ssId = reverseMap[leagueCode];
+        if (!ssId) {
+            console.warn(`No soccerstats mapping for league code: ${leagueCode}`);
+            return null;
+        }
+
+        const url = CONFIG.SOCCERSTATS_URL + `/latest.asp?league=${ssId}`;
+        console.log('Fetching soccerstats league table from:', url);
+        const response = await fetchWithRetry(url, 2, 'soccerstats');
+
+        if (response.ok) {
+            const html = await response.text();
+            const tableData = parseSoccerstatsLeagueTableFromHTML(html);
+
+            if (tableData) {
+                setCacheData(cacheKey, tableData, 'leagueTable');
+                console.log(`Soccerstats league table loaded: ${Object.keys(tableData.teams).length} teams`);
+                return tableData;
+            }
+        }
+
+        console.warn('No soccerstats league table data found');
+        return null;
+    } catch (error) {
+        console.warn('Error fetching soccerstats league table:', error.message);
         return null;
     }
 }
