@@ -522,12 +522,10 @@ export function showTeamsDisplay(countryName, leagueName, leagueCode, teamData) 
     selectedLeagueUrl = teamData.leagueUrl;
     selectedTeamsData = teamData; // Store for odds calculation
 
-    // Render league stats bar below header - prefer soccerstats data, fallback to calculated
+    // Render league stats bar below header - computed from league table, enriched with soccerstats
     const statsBarEl = document.getElementById('leagueStatsBar');
-    if (statsBarEl && selectedSoccerstatsData) {
-        statsBarEl.innerHTML = createSoccerstatsBar(selectedSoccerstatsData);
-    } else if (statsBarEl && selectedLeagueTable && selectedLeagueTable.standings) {
-        statsBarEl.innerHTML = createLeagueStatsBar(selectedLeagueTable.standings);
+    if (statsBarEl && selectedLeagueTable && selectedLeagueTable.standings) {
+        statsBarEl.innerHTML = createLeagueStatsBar(selectedLeagueTable.standings, selectedLeagueTable.source, selectedSoccerstatsData);
     } else if (statsBarEl) {
         statsBarEl.innerHTML = '';
     }
@@ -694,52 +692,34 @@ function calculateLeagueStats(standings) {
     };
 }
 
-// Create soccerstats-based stats bar HTML (richer data from soccerstats.com)
-function createSoccerstatsBar(ssData) {
-    if (!ssData) return '';
+// Create league stats bar HTML - computed from standings, with optional soccerstats extras
+function createLeagueStatsBar(standings, source, ssData) {
+    const stats = calculateLeagueStats(standings);
+    if (!stats) return '';
 
-    return `
-        <div class="league-stats-bar">
+    const isSS = source === 'soccerstats';
+    const sourceLabel = isSS ? 'soccerstats.com' : 'soccer-rating.com';
+    const sourceColor = isSS ? '#2196F3' : '#999';
+
+    // Use soccerstats overview data for Over 2.5 and BTTS if available
+    const extraStats = (ssData && ssData.over25) ? `
             <div class="league-stat">
-                <span class="league-stat-value">${ssData.goalsPerGame.toFixed(2)}</span>
-                <span class="league-stat-label">Goals/Match</span>
-            </div>
-            <div class="league-stat">
-                <span class="league-stat-value" style="color: #006600;">${ssData.homeWinPct}%</span>
-                <span class="league-stat-label">Home Win</span>
-            </div>
-            <div class="league-stat">
-                <span class="league-stat-value" style="color: #666;">${ssData.drawPct}%</span>
-                <span class="league-stat-label">Draw</span>
-            </div>
-            <div class="league-stat">
-                <span class="league-stat-value" style="color: #cc0000;">${ssData.awayWinPct}%</span>
-                <span class="league-stat-label">Away Win</span>
+                <span class="league-stat-value">${ssData.over15}%</span>
+                <span class="league-stat-label">Over 1.5</span>
             </div>
             <div class="league-stat">
                 <span class="league-stat-value">${ssData.over25}%</span>
                 <span class="league-stat-label">Over 2.5</span>
             </div>
             <div class="league-stat">
+                <span class="league-stat-value">${ssData.over35}%</span>
+                <span class="league-stat-label">Over 3.5</span>
+            </div>
+            <div class="league-stat">
                 <span class="league-stat-value">${ssData.btts}%</span>
                 <span class="league-stat-label">BTTS</span>
             </div>
-            <div class="league-stat">
-                <span class="league-stat-value" style="color: #888; font-size: 14px;">${ssData.matches}</span>
-                <span class="league-stat-label">Matches</span>
-            </div>
-            <div class="league-stat" style="opacity: 0.7;">
-                <span class="league-stat-value" style="font-size: 10px; color: #999;">soccerstats</span>
-                <span class="league-stat-label">Source</span>
-            </div>
-        </div>
-    `;
-}
-
-// Create league stats bar HTML
-function createLeagueStatsBar(standings) {
-    const stats = calculateLeagueStats(standings);
-    if (!stats) return '';
+    ` : '';
 
     return `
         <div class="league-stats-bar">
@@ -759,9 +739,14 @@ function createLeagueStatsBar(standings) {
                 <span class="league-stat-value" style="color: #cc0000;">${stats.awayWinPct}%</span>
                 <span class="league-stat-label">Away Win</span>
             </div>
+            ${extraStats}
             <div class="league-stat">
                 <span class="league-stat-value" style="color: #888; font-size: 14px;">${stats.totalMatches}</span>
                 <span class="league-stat-label">Matches</span>
+            </div>
+            <div class="league-stat" style="opacity: 0.8;">
+                <span class="league-stat-value" style="font-size: 10px; color: ${sourceColor}; font-weight: bold;">${sourceLabel}</span>
+                <span class="league-stat-label">Source</span>
             </div>
         </div>
     `;
@@ -783,10 +768,12 @@ export function showTableView() {
     }
 
     const standings = selectedLeagueTable.standings;
+    const tableSource = selectedLeagueTable.source === 'soccerstats' ? 'soccerstats.com' : 'soccer-rating.com';
+    const sourceColor = selectedLeagueTable.source === 'soccerstats' ? '#2196F3' : '#999';
 
     tableDisplay.innerHTML = `
         <div style="width: 100%;">
-            <div class="table-title">League Standings (${standings.length} teams)</div>
+            <div class="table-title">League Standings (${standings.length} teams) <span style="font-size: 11px; font-weight: normal; color: ${sourceColor}; margin-left: 8px;">via ${tableSource}</span></div>
             ${createStandingsTable(standings)}
 
             <div style="display: flex; gap: 20px; margin-top: 20px;">
