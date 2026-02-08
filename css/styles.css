@@ -357,6 +357,37 @@ body {
     white-space: nowrap;
 }
 
+.league-stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    background-color: #f0f8f0;
+    border: 1px solid #cde6cd;
+    border-radius: 6px;
+}
+
+.league-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.league-stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+}
+
+.league-stat-label {
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 @media (max-width: 768px) {
     .teams-content {
         flex-direction: column;

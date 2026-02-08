@@ -655,6 +655,65 @@ function createHomeAwayTable(standings, type) {
     `;
 }
 
+// Calculate league-wide stats from standings
+function calculateLeagueStats(standings) {
+    let totalMatches = 0;
+    let totalGoals = 0;
+    let totalHomeWins = 0;
+    let totalDraws = 0;
+    let totalAwayWins = 0;
+
+    for (const team of standings) {
+        // Each team's home matches represent unique league matches
+        totalMatches += team.homeMatches;
+        totalGoals += team.homeGF + team.homeGA;
+        totalHomeWins += team.homeWins;
+        totalDraws += team.homeDraws;
+        totalAwayWins += team.homeLosses; // Home loss = away win for opponent
+    }
+
+    if (totalMatches === 0) return null;
+
+    return {
+        goalsPerMatch: (totalGoals / totalMatches).toFixed(2),
+        homeWinPct: (totalHomeWins / totalMatches * 100).toFixed(1),
+        drawPct: (totalDraws / totalMatches * 100).toFixed(1),
+        awayWinPct: (totalAwayWins / totalMatches * 100).toFixed(1),
+        totalMatches
+    };
+}
+
+// Create league stats bar HTML
+function createLeagueStatsBar(standings) {
+    const stats = calculateLeagueStats(standings);
+    if (!stats) return '';
+
+    return `
+        <div class="league-stats-bar">
+            <div class="league-stat">
+                <span class="league-stat-value">${stats.goalsPerMatch}</span>
+                <span class="league-stat-label">Goals/Match</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #006600;">${stats.homeWinPct}%</span>
+                <span class="league-stat-label">Home Win</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #666;">${stats.drawPct}%</span>
+                <span class="league-stat-label">Draw</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #cc0000;">${stats.awayWinPct}%</span>
+                <span class="league-stat-label">Away Win</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #888; font-size: 14px;">${stats.totalMatches}</span>
+                <span class="league-stat-label">Matches</span>
+            </div>
+        </div>
+    `;
+}
+
 // Show table (standings) view
 export function showTableView() {
     document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
@@ -675,6 +734,7 @@ export function showTableView() {
     tableDisplay.innerHTML = `
         <div style="width: 100%;">
             <div class="table-title">League Standings (${standings.length} teams)</div>
+            ${createLeagueStatsBar(standings)}
             ${createStandingsTable(standings)}
 
             <div style="display: flex; gap: 20px; margin-top: 20px;">

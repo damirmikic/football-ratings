@@ -4,6 +4,59 @@ import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, 
 // Data caching
 const dataCache = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, timestamps: {} };
 
+// LocalStorage cache key prefix
+const LS_PREFIX = 'fr_cache_';
+
+// Load persisted cache from localStorage on init
+function loadFromLocalStorage() {
+    try {
+        const stored = localStorage.getItem(LS_PREFIX + 'data');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed && parsed.timestamps) {
+                // Restore only non-expired entries
+                for (const type of ['leagues', 'teams', 'odds', 'leagueTable']) {
+                    if (parsed[type]) {
+                        for (const key of Object.keys(parsed[type])) {
+                            const ts = parsed.timestamps[`${type}-${key}`] || parsed.timestamps[key];
+                            if (ts && (Date.now() - ts) < CONFIG.CACHE_DURATION) {
+                                dataCache[type][key] = parsed[type][key];
+                                dataCache.timestamps[`${type}-${key}`] = ts;
+                            }
+                        }
+                    }
+                }
+                console.log('Restored cache from localStorage');
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load cache from localStorage:', e.message);
+    }
+}
+
+// Persist current cache to localStorage
+function saveToLocalStorage() {
+    try {
+        const toStore = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, timestamps: {} };
+        for (const type of ['leagues', 'teams', 'odds', 'leagueTable']) {
+            for (const key of Object.keys(dataCache[type])) {
+                const tsKey = `${type}-${key}`;
+                const ts = dataCache.timestamps[tsKey] || dataCache.timestamps[key];
+                if (ts && (Date.now() - ts) < CONFIG.CACHE_DURATION) {
+                    toStore[type][key] = dataCache[type][key];
+                    toStore.timestamps[tsKey] = ts;
+                }
+            }
+        }
+        localStorage.setItem(LS_PREFIX + 'data', JSON.stringify(toStore));
+    } catch (e) {
+        console.warn('Failed to save cache to localStorage:', e.message);
+    }
+}
+
+// Initialize cache from localStorage
+loadFromLocalStorage();
+
 // Utility functions
 export function buildURL(endpoint) {
     return CONFIG.BASE_URL + endpoint;
@@ -16,7 +69,9 @@ function isCacheValid(cacheKey) {
 
 function setCacheData(cacheKey, data, type) {
     dataCache[type][cacheKey] = data;
+    dataCache.timestamps[`${type}-${cacheKey}`] = Date.now();
     dataCache.timestamps[cacheKey] = Date.now();
+    saveToLocalStorage();
 }
 
 function getCacheData(cacheKey, type) {
@@ -334,7 +389,14 @@ export function clearCache() {
     Object.keys(dataCache.leagueTable).forEach(key => delete dataCache.leagueTable[key]);
     Object.keys(dataCache.timestamps).forEach(key => delete dataCache.timestamps[key]);
 
-    console.log('Cache cleared');
+    // Clear localStorage cache
+    try {
+        localStorage.removeItem(LS_PREFIX + 'data');
+    } catch (e) {
+        console.warn('Failed to clear localStorage cache:', e.message);
+    }
+
+    console.log('Cache cleared (memory + localStorage)');
     return true;
 }
 
