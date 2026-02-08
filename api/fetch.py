@@ -29,17 +29,34 @@ class handler(BaseHTTPRequestHandler):
                 self._send_error(400, "Missing 'url' parameter")
                 return
 
+            # Parse source parameter
+            source_param = None
+            for param in query_string.split('&'):
+                if param.startswith('source='):
+                    source_param = param[7:]
+                    break
+
             # URL decode the parameter
-            from urllib.parse import unquote
+            from urllib.parse import unquote, urlparse
             url_param = unquote(url_param)
+
+            # Allowed hosts for proxying
+            allowed_hosts = ["www.soccer-rating.com", "www.soccerstats.com"]
 
             # Construct full URL
             if url_param.startswith('http'):
+                parsed = urlparse(url_param)
+                if parsed.hostname not in allowed_hosts:
+                    self._send_error(403, f'Host not allowed: {parsed.hostname}')
+                    return
                 full_url = url_param
             else:
                 # Remove leading slash if present to avoid double slashes
                 url_param = url_param.lstrip('/')
-                full_url = f"https://www.soccer-rating.com/{url_param}"
+                if source_param == 'soccerstats':
+                    full_url = f"https://www.soccerstats.com/{url_param}"
+                else:
+                    full_url = f"https://www.soccer-rating.com/{url_param}"
 
             # Make the request with proper headers
             headers = {

@@ -26,6 +26,7 @@ let selectedLeagueUrl = null;
 let selectedTeamsData = null;
 let selectedOddsData = null; // Store current odds data for margin adjustment updates
 let selectedLeagueTable = null; // Store league table data for Poisson xG model
+let selectedSoccerstatsData = null; // Store soccerstats league stats
 
 // Loading overlay
 export function showLoading(message) {
@@ -521,9 +522,11 @@ export function showTeamsDisplay(countryName, leagueName, leagueCode, teamData) 
     selectedLeagueUrl = teamData.leagueUrl;
     selectedTeamsData = teamData; // Store for odds calculation
 
-    // Render league stats bar below header
+    // Render league stats bar below header - prefer soccerstats data, fallback to calculated
     const statsBarEl = document.getElementById('leagueStatsBar');
-    if (statsBarEl && selectedLeagueTable && selectedLeagueTable.standings) {
+    if (statsBarEl && selectedSoccerstatsData) {
+        statsBarEl.innerHTML = createSoccerstatsBar(selectedSoccerstatsData);
+    } else if (statsBarEl && selectedLeagueTable && selectedLeagueTable.standings) {
         statsBarEl.innerHTML = createLeagueStatsBar(selectedLeagueTable.standings);
     } else if (statsBarEl) {
         statsBarEl.innerHTML = '';
@@ -691,6 +694,48 @@ function calculateLeagueStats(standings) {
     };
 }
 
+// Create soccerstats-based stats bar HTML (richer data from soccerstats.com)
+function createSoccerstatsBar(ssData) {
+    if (!ssData) return '';
+
+    return `
+        <div class="league-stats-bar">
+            <div class="league-stat">
+                <span class="league-stat-value">${ssData.goalsPerGame.toFixed(2)}</span>
+                <span class="league-stat-label">Goals/Match</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #006600;">${ssData.homeWinPct}%</span>
+                <span class="league-stat-label">Home Win</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #666;">${ssData.drawPct}%</span>
+                <span class="league-stat-label">Draw</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #cc0000;">${ssData.awayWinPct}%</span>
+                <span class="league-stat-label">Away Win</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value">${ssData.over25}%</span>
+                <span class="league-stat-label">Over 2.5</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value">${ssData.btts}%</span>
+                <span class="league-stat-label">BTTS</span>
+            </div>
+            <div class="league-stat">
+                <span class="league-stat-value" style="color: #888; font-size: 14px;">${ssData.matches}</span>
+                <span class="league-stat-label">Matches</span>
+            </div>
+            <div class="league-stat" style="opacity: 0.7;">
+                <span class="league-stat-value" style="font-size: 10px; color: #999;">soccerstats</span>
+                <span class="league-stat-label">Source</span>
+            </div>
+        </div>
+    `;
+}
+
 // Create league stats bar HTML
 function createLeagueStatsBar(standings) {
     const stats = calculateLeagueStats(standings);
@@ -792,6 +837,11 @@ export function showOddsView(oddsData) {
 // Set league table data for Poisson model
 export function setLeagueTable(tableData) {
     selectedLeagueTable = tableData;
+}
+
+// Set soccerstats data for enhanced stats bar
+export function setSoccerstatsData(ssData) {
+    selectedSoccerstatsData = ssData;
 }
 
 // Getters for selected data

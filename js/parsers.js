@@ -253,6 +253,100 @@ export function parseLeagueTableFromHTML(htmlString) {
     };
 }
 
+// Parse soccerstats.com league statistics table
+// Returns a map of soccerstats league ID -> stats object
+export function parseSoccerstatsFromHTML(htmlString) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlString, 'text/html');
+
+    const leagueStats = {};
+
+    // Find all table rows - soccerstats uses nested tables, look for rows with league links
+    const allLinks = doc.querySelectorAll('a[href*="latest.asp?league="]');
+
+    for (const link of allLinks) {
+        try {
+            // Extract league identifier from href like "latest.asp?league=england"
+            const href = link.getAttribute('href') || '';
+            const leagueMatch = href.match(/league=([^&"]+)/);
+            if (!leagueMatch) continue;
+
+            const leagueId = leagueMatch[1];
+
+            // Navigate up to the row containing this link
+            let row = link.closest('tr');
+            if (!row) continue;
+
+            // Get all cells in the row
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 12) continue;
+
+            // Parse the stats from the row cells
+            // The soccerstats table structure (based on the provided HTML):
+            // Cell layout varies but typically:
+            // [country/league name] [stats link] [progress] [matches] [home%] [draw%] [away%] [gpg] [hg] [ag] [o1.5] [o2.5] [o3.5] [btts]
+
+            // Find numeric cells - we need to locate them by parsing all cell text
+            const cellTexts = [];
+            for (const cell of cells) {
+                cellTexts.push(cell.textContent.trim());
+            }
+
+            // Find the cell indices with numeric data
+            // Look for the matches played (first pure number > 10 typically)
+            let statsStartIndex = -1;
+            for (let i = 0; i < cellTexts.length; i++) {
+                const val = parseInt(cellTexts[i]);
+                if (!isNaN(val) && val > 5 && cellTexts[i].match(/^\d+$/)) {
+                    statsStartIndex = i;
+                    break;
+                }
+            }
+
+            if (statsStartIndex === -1) continue;
+
+            // From the stats start, extract values
+            const remaining = cellTexts.slice(statsStartIndex);
+            if (remaining.length < 10) continue;
+
+            const matches = parseInt(remaining[0]) || 0;
+            const homeWinPct = parseFloat(remaining[1]) || 0;
+            const drawPct = parseFloat(remaining[2]) || 0;
+            const awayWinPct = parseFloat(remaining[3]) || 0;
+            const goalsPerGame = parseFloat(remaining[4]) || 0;
+            const homeGoals = parseFloat(remaining[5]) || 0;
+            const awayGoals = parseFloat(remaining[6]) || 0;
+            const over15 = parseFloat(remaining[7]) || 0;
+            const over25 = parseFloat(remaining[8]) || 0;
+            const over35 = parseFloat(remaining[9]) || 0;
+            const btts = remaining.length > 10 ? (parseFloat(remaining[10]) || 0) : 0;
+
+            if (matches === 0) continue;
+
+            leagueStats[leagueId] = {
+                leagueId,
+                leagueName: link.textContent.trim(),
+                matches,
+                homeWinPct,
+                drawPct,
+                awayWinPct,
+                goalsPerGame,
+                homeGoals,
+                awayGoals,
+                over15,
+                over25,
+                over35,
+                btts
+            };
+        } catch (e) {
+            console.warn('Error parsing soccerstats row:', e);
+        }
+    }
+
+    console.log(`Parsed ${Object.keys(leagueStats).length} leagues from soccerstats`);
+    return leagueStats;
+}
+
 // Parse odds data from HTML
 export function parseOddsDataFromHTML(htmlString) {
     const parser = new DOMParser();

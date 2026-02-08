@@ -1,6 +1,7 @@
 // Application configuration
 export const CONFIG = {
     BASE_URL: 'https://www.soccer-rating.com',
+    SOCCERSTATS_URL: 'https://www.soccerstats.com',
     ENDPOINTS: {
         // Standard patterns
         leagues: (country) => `/${country}/`,
@@ -247,6 +248,191 @@ export const CONFIG = {
             "MA1": "Botola Pro",
             "ZA1": "South African Premier Division", "ZA2": "National First Division",
             "RW1": "Rwanda National Football League"
+        },
+
+        // Soccerstats.com league identifier to soccer-rating league code mapping
+        // Soccerstats uses identifiers like "england", "england2" in URLs: latest.asp?league=XXX
+        soccerstatsMapping: {
+            // England
+            "england": "UK1", "england2": "UK2", "england3": "UK3", "england4": "UK4",
+            "england5": "UK5",
+            // Germany
+            "germany": "DE1", "germany2": "DE2", "germany3": "DE3",
+            // Spain
+            "spain": "ES1", "spain2": "ES2",
+            // Italy
+            "italy": "IT1", "italy2": "IT2",
+            // France
+            "france": "FR1", "france2": "FR2", "france3": "FR3",
+            // Netherlands
+            "netherlands": "NL1", "netherlands2": "NL2",
+            // Portugal
+            "portugal": "PT1", "portugal2": "PT2",
+            // Belgium
+            "belgium": "BE1", "belgium2": "BE2",
+            // Turkey
+            "turkey": "TU1", "turkey2": "TU2",
+            // Greece
+            "greece": "GR1",
+            // Austria
+            "austria": "AT1", "austria2": "AT2",
+            // Switzerland
+            "switzerland": "CH1", "switzerland2": "CH2",
+            // Scotland
+            "scotland": "SC1", "scotland2": "SC2", "scotland3": "SC3", "scotland4": "SC4",
+            // Denmark
+            "denmark": "DK1", "denmark2": "DK2",
+            // Sweden
+            "sweden": "SW1", "sweden2": "SW2",
+            // Norway
+            "norway": "NO1", "norway2": "NO2",
+            // Finland
+            "finland": "FI1", "finland2": "FI2",
+            // Czech Republic
+            "czech": "CZ1", "czech2": "CZ2",
+            // Poland
+            "poland": "PL1", "poland2": "PL2",
+            // Romania
+            "romania": "RO1", "romania2": "RO2",
+            // Ukraine
+            "ukraine": "UA1",
+            // Croatia
+            "croatia": "HR1", "croatia2": "HR2",
+            // Bulgaria
+            "bulgaria": "BG1", "bulgaria2": "BG2",
+            // Serbia
+            "serbia": "CS1", "serbia2": "CS2",
+            // Hungary
+            "hungary": "HU1", "hungary2": "HU2",
+            // Slovakia
+            "slovakia": "SK1", "slovakia2": "SK2",
+            // Slovenia
+            "slovenia": "SI1",
+            // Russia
+            "russia": "RU1", "russia2": "RU2",
+            // Cyprus
+            "cyprus": "CY1",
+            // Iceland
+            "iceland": "IS1",
+            // Ireland
+            "ireland": "IR1", "ireland2": "IR2",
+            // Israel
+            "israel": "IL1",
+            // Bosnia
+            "bosnia": "BA1",
+            // Albania
+            "albania": "AL1",
+            // Georgia
+            "georgia": "GE1",
+            // Latvia
+            "latvia": "LA1",
+            // Lithuania
+            "lithuania": "LT1",
+            // Estonia
+            "estonia": "EE1",
+            // North Macedonia
+            "macedonia": "MK1",
+            // Armenia
+            "armenia": "AM1",
+            // Montenegro
+            "montenegro": "MN1",
+            // Moldova
+            "moldova": "MD1",
+            // Azerbaijan
+            "azerbaijan": "AZ1",
+            // Kazakhstan
+            "kazakhstan": "KZ1",
+            // Belarus
+            "belarus": "BY1",
+            // Wales
+            "wales": "WL1",
+            // Northern Ireland
+            "nireland": "NI1",
+            // Faroe Islands
+            "faroeislands": "FA1",
+            // Gibraltar
+            "gibraltar": "GI1",
+            // Brazil
+            "brazil": "BR1", "brazil2": "BR2",
+            // Argentina
+            "argentina": "AR1", "argentina2": "AR2",
+            // Mexico
+            "mexico": "MX1",
+            // USA
+            "usa": "US1",
+            // Colombia
+            "colombia": "CO1",
+            // Chile
+            "chile": "CL1", "chile2": "CL2",
+            // Ecuador
+            "ecuador": "EC1",
+            // Paraguay
+            "paraguay": "PY1",
+            // Uruguay
+            "uruguay": "UY1",
+            // Peru
+            "peru": "PE1",
+            // Venezuela
+            "venezuela": "VE1",
+            // Bolivia
+            "bolivia": "BO1",
+            // Costa Rica
+            "costarica": "CR1",
+            // Canada
+            "canada": "CA1",
+            // Japan
+            "japan": "JP1", "japan2": "JP2", "japan3": "JP3",
+            // South Korea
+            "southkorea": "KR1", "southkorea2": "KR2",
+            // China
+            "china": "CN1",
+            // Australia
+            "australia": "AU1",
+            // Saudi Arabia
+            "saudiarabia": "SA1",
+            // Iran
+            "iran": "IA1",
+            // Thailand
+            "thailand": "TH1",
+            // Qatar
+            "qatar": "QA1",
+            // UAE
+            "uae": "AE1",
+            // Indonesia
+            "indonesia": "ID1",
+            // India
+            "india": "IN1",
+            // Malaysia
+            "malaysia": "MY1",
+            // Vietnam
+            "vietnam": "VN1",
+            // Singapore
+            "singapore": "SG1",
+            // Hong Kong
+            "hongkong": "HK1",
+            // Jordan
+            "jordan": "JO1",
+            // Kuwait
+            "kuwait": "KW1",
+            // Bahrain
+            "bahrain": "BH1",
+            // Egypt
+            "egypt": "EG1",
+            // Morocco
+            "morocco": "MA1",
+            // South Africa
+            "southafrica": "ZA1",
+            // Rwanda
+            "rwanda": "RW1"
+        },
+
+        // Reverse mapping: soccer-rating code to soccerstats league identifier
+        get soccerstatsReverseMapping() {
+            const reverse = {};
+            for (const [ssKey, srCode] of Object.entries(this.soccerstatsMapping)) {
+                reverse[srCode] = ssKey;
+            }
+            return reverse;
         },
 
         // Get URL patterns for a specific country and league
