@@ -1,4 +1,4 @@
-import { CONFIG, countries } from './config.js?v=4';
+import { CONFIG, countries } from './config.js?v=5';
 import {
     calculateOddsFromRatings,
     calculateOddsWithPoisson,
@@ -15,8 +15,8 @@ import {
     applyMarginToDNB,
     removeMarginFromDNB,
     calculateDNBFromFairOdds
-} from './odds-calculator.js?v=4';
-import { findTeamDisplayStats } from './poisson-model.js?v=4';
+} from './odds-calculator.js?v=5';
+import { findTeamDisplayStats } from './poisson-model.js?v=5';
 
 // UI state management
 let selectedCountryForTeams = null;
@@ -319,9 +319,9 @@ export function createOddsComparisonTable(odds, teamsData, leagueCode = null) {
                     </div>
                     ${homeStats || awayStats ? `
                     <div style="font-size: 11px; color: #555; text-align: center; margin-top: 4px;">
-                        ${homeStats ? `<span style="font-weight: bold;">${homeStats.position ? '#' + homeStats.position : '-'}</span> <span style="color: #888;">${homeStats.homeGPM.toFixed(2)} home GPM</span>` : ''}
+                        ${homeStats ? `<span style="font-weight: bold;">${homeStats.position ? '#' + homeStats.position : '-'}</span> <span style="color: #888;">${homeStats.homeGPM.toFixed(2)} GPM</span> <span style="color: #aaa;">(${homeStats.homeTotalGPM.toFixed(2)} total)</span>` : ''}
                         <span style="color: #ccc; margin: 0 6px;">|</span>
-                        ${awayStats ? `<span style="color: #888;">${awayStats.awayGPM.toFixed(2)} away GPM</span> <span style="font-weight: bold;">${awayStats.position ? '#' + awayStats.position : '-'}</span>` : ''}
+                        ${awayStats ? `<span style="color: #aaa;">(${awayStats.awayTotalGPM.toFixed(2)} total)</span> <span style="color: #888;">${awayStats.awayGPM.toFixed(2)} GPM</span> <span style="font-weight: bold;">${awayStats.position ? '#' + awayStats.position : '-'}</span>` : ''}
                     </div>
                     ` : ''}
                 </div>

@@ -294,7 +294,9 @@ export function findTeamDisplayStats(teamName, leagueTable) {
     return {
         position,
         homeGPM: teamData.homeGFPerMatch,
-        awayGPM: teamData.awayGFPerMatch
+        awayGPM: teamData.awayGFPerMatch,
+        homeTotalGPM: (teamData.homeGF + teamData.homeGA) / teamData.homeMatches,
+        awayTotalGPM: (teamData.awayGF + teamData.awayGA) / teamData.awayMatches
     };
 }
 
