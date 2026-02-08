@@ -1,4 +1,4 @@
-import { fetchTeamData, fetchOddsData, fetchLeagueTable, clearCache, testConnection } from './api.js?v=5';
+import { fetchTeamData, fetchOddsData, fetchLeagueTable, clearCache, testConnection, fetchSoccerstatsData } from './api.js?v=5';
 import {
     createCountriesList,
     showLoading,
@@ -10,7 +10,8 @@ import {
     showTableView,
     getSelectedLeagueUrl,
     updateMarginAdjustment,
-    setLeagueTable
+    setLeagueTable,
+    setSoccerstatsData
 } from './ui.js?v=5';
 
 // Data stores
@@ -74,10 +75,11 @@ async function handleLeagueClick(event) {
         try {
             showLoading(`Loading ${leagueName} team data...`);
 
-            // Fetch team ratings and league table in parallel
-            const [fetchedTeamData, leagueTable] = await Promise.all([
+            // Fetch team ratings, league table, and soccerstats in parallel
+            const [fetchedTeamData, leagueTable, ssData] = await Promise.all([
                 fetchTeamData(countryName, leagueName, leagueCode),
-                fetchLeagueTable(countryName, leagueCode)
+                fetchLeagueTable(countryName, leagueCode),
+                fetchSoccerstatsData(leagueCode)
             ]);
 
             teamData = fetchedTeamData;
@@ -92,9 +94,13 @@ async function handleLeagueClick(event) {
             // Set league table for Poisson+DC model
             setLeagueTable(leagueTable);
 
+            // Set soccerstats data for enhanced stats bar
+            setSoccerstatsData(ssData);
+
             hideLoading();
             const tableInfo = leagueTable ? ` + league table (${Object.keys(leagueTable.teams).length} teams)` : '';
-            showInfo(`Successfully loaded ${teamData.home.length + teamData.away.length} team records for ${leagueName}${tableInfo}`);
+            const ssInfo = ssData ? ' + soccerstats' : '';
+            showInfo(`Successfully loaded ${teamData.home.length + teamData.away.length} team records for ${leagueName}${tableInfo}${ssInfo}`);
         } catch (error) {
             hideLoading();
             showError(`Failed to load team data for ${leagueName}. ${error.message}`);

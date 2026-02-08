@@ -18,8 +18,12 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Base URL for soccer-rating.com
+# Base URLs for data sources
 BASE_URL = "https://www.soccer-rating.com"
+SOCCERSTATS_URL = "https://www.soccerstats.com"
+
+# Allowed target hosts for proxying
+ALLOWED_HOSTS = ["www.soccer-rating.com", "www.soccerstats.com"]
 
 # Cache settings
 CACHE_TIMEOUT = 3600  # 1 hour in seconds
@@ -79,14 +83,26 @@ def api_fetch():
     from flask import request
     
     url_path = request.args.get('url', '/')
-    
-    # Construct full URL
+    source = request.args.get('source', 'soccer-rating')
+
+    # Construct full URL based on source
     if url_path.startswith('http'):
+        # Validate that the URL is for an allowed host
+        from urllib.parse import urlparse
+        parsed = urlparse(url_path)
+        if parsed.hostname not in ALLOWED_HOSTS:
+            return jsonify({
+                'success': False,
+                'error': f'Host not allowed: {parsed.hostname}'
+            }), 403
         full_url = url_path
     else:
         # Remove leading slash if present to avoid double slashes
         url_path = url_path.lstrip('/')
-        full_url = f"{BASE_URL}/{url_path}"
+        if source == 'soccerstats':
+            full_url = f"{SOCCERSTATS_URL}/{url_path}"
+        else:
+            full_url = f"{BASE_URL}/{url_path}"
     
     try:
         # Use cache key to enable expiration

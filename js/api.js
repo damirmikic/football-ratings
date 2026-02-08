@@ -1,8 +1,8 @@
 import { CONFIG } from './config.js?v=5';
-import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, parseLeagueTableFromHTML } from './parsers.js?v=5';
+import { parseTeamDataFromHTML, parseLeagueDataFromHTML, parseOddsDataFromHTML, parseLeagueTableFromHTML, parseSoccerstatsFromHTML } from './parsers.js?v=5';
 
 // Data caching
-const dataCache = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, timestamps: {} };
+const dataCache = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, soccerstats: {}, timestamps: {} };
 
 // LocalStorage cache key prefix
 const LS_PREFIX = 'fr_cache_';
@@ -15,7 +15,7 @@ function loadFromLocalStorage() {
             const parsed = JSON.parse(stored);
             if (parsed && parsed.timestamps) {
                 // Restore only non-expired entries
-                for (const type of ['leagues', 'teams', 'odds', 'leagueTable']) {
+                for (const type of ['leagues', 'teams', 'odds', 'leagueTable', 'soccerstats']) {
                     if (parsed[type]) {
                         for (const key of Object.keys(parsed[type])) {
                             const ts = parsed.timestamps[`${type}-${key}`] || parsed.timestamps[key];
@@ -37,8 +37,8 @@ function loadFromLocalStorage() {
 // Persist current cache to localStorage
 function saveToLocalStorage() {
     try {
-        const toStore = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, timestamps: {} };
-        for (const type of ['leagues', 'teams', 'odds', 'leagueTable']) {
+        const toStore = { leagues: {}, teams: {}, odds: {}, leagueTable: {}, soccerstats: {}, timestamps: {} };
+        for (const type of ['leagues', 'teams', 'odds', 'leagueTable', 'soccerstats']) {
             for (const key of Object.keys(dataCache[type])) {
                 const tsKey = `${type}-${key}`;
                 const ts = dataCache.timestamps[tsKey] || dataCache.timestamps[key];
@@ -79,13 +79,17 @@ function getCacheData(cacheKey, type) {
 }
 
 // Fetch data using serverless function
-export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
+// source: 'soccer-rating' (default) or 'soccerstats'
+export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES, source = 'soccer-rating') {
     const isLocalMode = CONFIG.isLocalFile() || CONFIG.isLocalhost();
 
     // Extract the path from the full URL
     let urlPath = url;
     if (url.includes('soccer-rating.com')) {
         urlPath = url.split('soccer-rating.com')[1] || '/';
+    } else if (url.includes('soccerstats.com')) {
+        urlPath = url.split('soccerstats.com')[1] || '/';
+        source = 'soccerstats';
     }
 
     // Try serverless function (works on Vercel and local Python server)
@@ -104,6 +108,9 @@ export async function fetchWithRetry(url, maxRetries = CONFIG.MAX_RETRIES) {
 
                 // Use URLSearchParams to avoid double encoding
                 const params = new URLSearchParams({ url: urlPath });
+                if (source === 'soccerstats') {
+                    params.set('source', 'soccerstats');
+                }
                 const apiUrl = `${endpoint}?${params.toString()}`;
                 console.log(`Trying backend API (attempt ${attempt + 1}/${maxRetries}):`, apiUrl);
 
@@ -381,12 +388,92 @@ export async function fetchLeagueTable(countryName, leagueCode) {
     }
 }
 
+// Fetch soccerstats league statistics
+// Returns stats for a specific league code (soccer-rating code), or null if not found
+export async function fetchSoccerstatsData(leagueCode) {
+    const cacheKey = 'soccerstats-all';
+
+    // Check if we have cached soccerstats data
+    const cachedData = getCacheData(cacheKey, 'soccerstats');
+    if (cachedData) {
+        console.log('Using cached soccerstats data');
+        const reverseMap = CONFIG.ENDPOINTS.soccerstatsReverseMapping;
+        const ssId = reverseMap[leagueCode];
+        if (ssId && cachedData[ssId]) {
+            return cachedData[ssId];
+        }
+        return null;
+    }
+
+    try {
+        // Fetch the main soccerstats page with all league statistics
+        const url = CONFIG.SOCCERSTATS_URL + '/latest.asp';
+        console.log('Fetching soccerstats data from:', url);
+        const response = await fetchWithRetry(url, 2, 'soccerstats');
+
+        if (response.ok) {
+            const html = await response.text();
+            const allStats = parseSoccerstatsFromHTML(html);
+
+            if (Object.keys(allStats).length > 0) {
+                setCacheData(cacheKey, allStats, 'soccerstats');
+                console.log(`Soccerstats: cached ${Object.keys(allStats).length} leagues`);
+
+                // Look up the requested league
+                const reverseMap = CONFIG.ENDPOINTS.soccerstatsReverseMapping;
+                const ssId = reverseMap[leagueCode];
+                if (ssId && allStats[ssId]) {
+                    return allStats[ssId];
+                }
+            }
+        }
+
+        return null;
+    } catch (error) {
+        console.warn('Error fetching soccerstats data:', error.message);
+        return null;
+    }
+}
+
+// Fetch all soccerstats data (returns the full map)
+export async function fetchAllSoccerstatsData() {
+    const cacheKey = 'soccerstats-all';
+
+    const cachedData = getCacheData(cacheKey, 'soccerstats');
+    if (cachedData) {
+        console.log('Using cached soccerstats data (all)');
+        return cachedData;
+    }
+
+    try {
+        const url = CONFIG.SOCCERSTATS_URL + '/latest.asp';
+        console.log('Fetching all soccerstats data from:', url);
+        const response = await fetchWithRetry(url, 2, 'soccerstats');
+
+        if (response.ok) {
+            const html = await response.text();
+            const allStats = parseSoccerstatsFromHTML(html);
+
+            if (Object.keys(allStats).length > 0) {
+                setCacheData(cacheKey, allStats, 'soccerstats');
+                return allStats;
+            }
+        }
+
+        return {};
+    } catch (error) {
+        console.warn('Error fetching all soccerstats data:', error.message);
+        return {};
+    }
+}
+
 // Clear all cached data
 export function clearCache() {
     Object.keys(dataCache.leagues).forEach(key => delete dataCache.leagues[key]);
     Object.keys(dataCache.teams).forEach(key => delete dataCache.teams[key]);
     Object.keys(dataCache.odds).forEach(key => delete dataCache.odds[key]);
     Object.keys(dataCache.leagueTable).forEach(key => delete dataCache.leagueTable[key]);
+    Object.keys(dataCache.soccerstats).forEach(key => delete dataCache.soccerstats[key]);
     Object.keys(dataCache.timestamps).forEach(key => delete dataCache.timestamps[key]);
 
     // Clear localStorage cache
