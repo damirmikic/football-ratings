@@ -521,6 +521,14 @@ export function showTeamsDisplay(countryName, leagueName, leagueCode, teamData) 
     selectedLeagueUrl = teamData.leagueUrl;
     selectedTeamsData = teamData; // Store for odds calculation
 
+    // Render league stats bar below header
+    const statsBarEl = document.getElementById('leagueStatsBar');
+    if (statsBarEl && selectedLeagueTable && selectedLeagueTable.standings) {
+        statsBarEl.innerHTML = createLeagueStatsBar(selectedLeagueTable.standings);
+    } else if (statsBarEl) {
+        statsBarEl.innerHTML = '';
+    }
+
     document.getElementById('welcomeMessage').style.display = 'none';
     document.getElementById('teamsDisplay').classList.add('show');
 
@@ -734,7 +742,6 @@ export function showTableView() {
     tableDisplay.innerHTML = `
         <div style="width: 100%;">
             <div class="table-title">League Standings (${standings.length} teams)</div>
-            ${createLeagueStatsBar(standings)}
             ${createStandingsTable(standings)}
 
             <div style="display: flex; gap: 20px; margin-top: 20px;">
